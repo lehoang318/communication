@@ -17,30 +17,37 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
 
     int ret;
 
+    //---------------------------------------
+    // Initialize Winsock
+    WSADATA wsaData;
+    ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (NO_ERROR != ret) {
+        LOGE("WSAStartup() failed (error code: %d)!\n", ret);
+        return tcpClient;
+    }
+
     SOCKET socketFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (0 > socketFd) {
-        perror("Could not create TCP socket!\n");
+    if (INVALID_SOCKET == socketFd) {
+        LOGE("socket() failed (error code: %d)!\n", WSAGetLastError());
+        WSACleanup();
         return tcpClient;
     }
 
-    int enable = 1;
-    ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-    if (0 > ret) {
-        perror("Failed to enable SO_REUSEADDR!\n");
-        ::close(socketFd);
+    BOOL enable = TRUE;
+    ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&enable), sizeof(enable));
+    if (SOCKET_ERROR == ret) {
+        LOGE("Failed to enable SO_REUSEADDR (error code: %d)\n", WSAGetLastError());
+        closesocket(socketFd);
+        WSACleanup();
         return tcpClient;
     }
 
-    int flags = fcntl(socketFd, F_GETFL, 0);
-    if (0 > flags) {
-        perror("Failed to get socket flags!\n");
-        ::close(socketFd);
-        return tcpClient;
-    }
-
-    if (0 > fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK))) {
-        perror("Failed to enable NON-BLOCKING mode!\n");
-        ::close(socketFd);
+    unsigned long non_blocking = 1;
+    ret = ioctlsocket(socketFd, FIONBIO, &non_blocking);
+    if (SOCKET_ERROR == ret) {
+        LOGE("Failed to enable NON-BLOCKING mode (error code: %d)\n", WSAGetLastError());
+        closesocket(socketFd);
+        WSACleanup();
         return tcpClient;
     }
 
@@ -53,7 +60,8 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
 
     do {
         ret = connect(socketFd, reinterpret_cast<const struct sockaddr *>(&remoteSocketAddr), sizeof(remoteSocketAddr));
-        if (0 == ret) {
+        if ((0 == ret) || (WSAEISCONN == WSAGetLastError())) {
+            ret = 0;
             break;
         }
     } while (
@@ -62,9 +70,10 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
                         ).count()
     );
 
-    if (0 != ret) {
-        perror("Failed to connect to server!\n");
-        ::close(socketFd);
+    if (SOCKET_ERROR == ret) {
+        LOGE("Failed to connect to %s/%u (error code: %d)\n", serverAddr.c_str(), remotePort, WSAGetLastError());
+        closesocket(socketFd);
+        WSACleanup();
         return tcpClient;
     }
 
@@ -85,7 +94,8 @@ void TcpClient::close() {
     }
 
     if (0 <= mSocketFd) {
-        ::close(mSocketFd);
+        closesocket(mSocketFd);
+        WSACleanup();
         mSocketFd = -1;
     }
 }
@@ -109,12 +119,13 @@ void TcpClient::runTx() {
 }
 
 ssize_t TcpClient::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
-    ssize_t ret = ::recv(mSocketFd, pBuffer.get(), limit, 0);
-    if (0 > ret) {
-        if (EWOULDBLOCK == errno) {
+    ssize_t ret = ::recv(mSocketFd, reinterpret_cast<char *>(pBuffer.get()), limit, 0);
+    if (SOCKET_ERROR == ret) {
+        int error = WSAGetLastError();
+        if (WSAEWOULDBLOCK == error) {
             ret = 0;
         } else {
-            perror("Failed to read from TCP Socket!");
+            LOGE("Failed to read from TCP Socket (error code: %d)\n", error);
         }
     } else if (0 == ret) {
         ret = -2;   // Stream socket peer has performed an orderly shutdown!
@@ -129,13 +140,13 @@ ssize_t TcpClient::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
     // Send data over TCP
     ssize_t ret = 0LL;
     for (int i = 0; i < TX_RETRY_COUNT; i++) {
-        ret = ::send(mSocketFd, pData.get(), size, 0);
-        if (0 > ret) {
-            if (EWOULDBLOCK == errno) {
+        ret = ::send(mSocketFd, reinterpret_cast<const char *>(pData.get()), size, 0);
+        if (SOCKET_ERROR == ret) {
+            int error = WSAGetLastError();
+            if (WSAEWOULDBLOCK == error) {
                 // Ignore & retry
             } else {
-                perror("Failed to write to TCP Socket!");
-                break;
+                LOGE("Failed to write to TCP Socket (error code: %d)\n", error);
             }
         } else if (0 == ret) {
             // Should not happen!

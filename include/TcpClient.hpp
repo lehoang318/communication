@@ -5,7 +5,7 @@
 #include <winsock2.h>
 
 // Need to link with Ws2_32.lib
-#pragma comment (lib, "Ws2_32.lib")
+// #pragma comment (lib, "Ws2_32.lib")
 
 #else // __WIN32__
 #include <arpa/inet.h>

@@ -1,3 +1,4 @@
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -756,4 +757,4 @@ const uint8_t v9[] = {
 };
 
 std::vector<const uint8_t *> vectors = {v0 ,v1 ,v2 ,v3 ,v4 ,v5 ,v6 ,v7 ,v8 ,v9 };
-std::vector<size_t> vectors_sizes = {956 ,742 ,327 ,347 ,922 ,560 ,214 ,180 ,806 ,683 };
+std::vector<std::size_t> vectors_sizes = {956 ,742 ,327 ,347 ,922 ,560 ,214 ,180 ,806 ,683 };

@@ -1,12 +1,16 @@
 #ifndef __UDPPEER_HPP__
 #define __UDPPEER_HPP__
 
+#include "common.hpp"
+#include "P2P_Endpoint.hpp"
+#include "Packet.hpp"
+
 #ifdef __WIN32__
 #include <winsock2.h>
 #include <ws2tcpip.h>
 
 // Need to link with Ws2_32.lib
-#pragma comment (lib, "Ws2_32.lib")
+// #pragma comment (lib, "Ws2_32.lib")
 // #pragma comment (lib, "Mswsock.lib")
 
 #else // __WIN32__
@@ -21,11 +25,8 @@
 
 #include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
-
-#include "common.hpp"
-#include "P2P_Endpoint.hpp"
-#include "Packet.hpp"
 
 #ifndef __WIN32__
 typedef int SOCKET;

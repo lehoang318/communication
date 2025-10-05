@@ -14,30 +14,37 @@ std::unique_ptr<UdpPeer> UdpPeer::create(
 
     int ret;
 
+    //---------------------------------------
+    // Initialize Winsock
+    WSADATA wsaData;
+    ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    if (NO_ERROR != ret) {
+        LOGE("WSAStartup() failed (error code: %d)!\n", ret);
+        return udpPeer;
+    }
+
     SOCKET socketFd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (0 > socketFd) {
-        perror("Could not create UDP socket!\n");
+    if (INVALID_SOCKET == socketFd) {
+        LOGE("socket() failed (error code: %d)!\n", WSAGetLastError());
+        WSACleanup();
         return udpPeer;
     }
 
-    int enable = 1;
-    ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-    if (0 > ret) {
-        perror("Failed to enable SO_REUSEADDR!\n");
-        ::close(socketFd);
+    BOOL enable = TRUE;
+    ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&enable), sizeof(enable));
+    if (SOCKET_ERROR == ret) {
+        LOGE("Failed to enable SO_REUSEADDR (error code: %d)\n", WSAGetLastError());
+        closesocket(socketFd);
+        WSACleanup();
         return udpPeer;
     }
 
-    int flags = fcntl(socketFd, F_GETFL, 0);
-    if (0 > flags) {
-        perror("Failed to get socket flags!\n");
-        ::close(socketFd);
-        return udpPeer;
-    }
-
-    if (0 > fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK))) {
-        perror("Failed to enable NON-BLOCKING mode!\n");
-        ::close(socketFd);
+    unsigned long non_blocking = 1;
+    ret = ioctlsocket(socketFd, FIONBIO, &non_blocking);
+    if (SOCKET_ERROR == ret) {
+        LOGE("Failed to enable NON-BLOCKING mode (error code: %d)\n", WSAGetLastError());
+        closesocket(socketFd);
+        WSACleanup();
         return udpPeer;
     }
 
@@ -46,9 +53,10 @@ std::unique_ptr<UdpPeer> UdpPeer::create(
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
     localSocketAddr.sin_port        = htons(localPort);
     ret = bind(socketFd, reinterpret_cast<const struct sockaddr *>(&localSocketAddr), sizeof(localSocketAddr));
-    if (0 > ret) {
-        perror("Failed to assigns address to the socket!\n");
-        ::close(socketFd);
+    if (SOCKET_ERROR == ret) {
+        LOGE("Failed to assigns address to the socket (error code: %d)\n", WSAGetLastError());
+        closesocket(socketFd);
+        WSACleanup();
         return udpPeer;
     }
 
@@ -68,7 +76,8 @@ void UdpPeer::close() {
     }
 
     if (0 <= mSocketFd) {
-        ::close(mSocketFd);
+        closesocket(mSocketFd);
+        WSACleanup();
         mSocketFd = -1;
     }
 }
@@ -111,15 +120,16 @@ ssize_t UdpPeer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& 
     remoteAddressSize = (socklen_t)sizeof(remoteSocketAddr);
 
     ssize_t ret = recvfrom(
-                    mSocketFd, pBuffer.get(), limit, 0,
+                    mSocketFd, reinterpret_cast<char *>(pBuffer.get()), limit, 0,
                     reinterpret_cast<struct sockaddr *>(&remoteSocketAddr), &remoteAddressSize
                 );
 
-    if (0 > ret) {
-        if (EWOULDBLOCK == errno) {
+    if (SOCKET_ERROR == ret) {
+        int error = WSAGetLastError();
+        if (WSAEWOULDBLOCK == error) {
             ret = 0;
         } else {
-            perror("Failed to read from UDP Socket!");
+            LOGE("Failed to read from UDP Socket (error code: %d)\n", error);
         }
     } else if (0 == ret) {
         // zero-length datagrams!
@@ -138,16 +148,16 @@ ssize_t UdpPeer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& s
         {
             std::lock_guard<std::mutex> lock(mTxMutex);
             ret = sendto(
-                            mSocketFd, pData.get(), size, 0,
+                            mSocketFd, reinterpret_cast<const char *>(pData.get()), size, 0,
                             reinterpret_cast<struct sockaddr *>(&mPeerSockAddr), sizeof(mPeerSockAddr)
                         );
 
-            if (0 > ret) {
-                if (EWOULDBLOCK == errno) {
+            if (SOCKET_ERROR == ret) {
+                int error = WSAGetLastError();
+                if (WSAEWOULDBLOCK == error) {
                     // Ignore & retry
                 } else {
-                    perror("Failed to write to UDP Socket!");
-                    break;
+                    LOGE("Failed to write to UDP Socket (error code: %d)\n", error);
                 }
             } else if (0 == ret) {
                 // Should not happen!
