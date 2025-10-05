@@ -3,8 +3,7 @@
 namespace comm {
 
 std::unique_ptr<UdpPeer> UdpPeer::create(
-    const uint16_t& localPort, const std::string& peerAddress, const uint16_t& peerPort
-) {
+    const uint16_t& localPort, const std::string& peerAddress, const uint16_t& peerPort) {
     std::unique_ptr<UdpPeer> udpPeer;
 
     if (0 == localPort) {
@@ -42,10 +41,10 @@ std::unique_ptr<UdpPeer> UdpPeer::create(
     }
 
     struct sockaddr_in localSocketAddr;
-    localSocketAddr.sin_family      = AF_INET;
+    localSocketAddr.sin_family = AF_INET;
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
-    localSocketAddr.sin_port        = htons(localPort);
-    ret = bind(socketFd, reinterpret_cast<const struct sockaddr *>(&localSocketAddr), sizeof(localSocketAddr));
+    localSocketAddr.sin_port = htons(localPort);
+    ret = bind(socketFd, reinterpret_cast<const struct sockaddr*>(&localSocketAddr), sizeof(localSocketAddr));
     if (0 > ret) {
         perror("Failed to assigns address to the socket!\n");
         ::close(socketFd);
@@ -80,15 +79,15 @@ bool UdpPeer::setDestination(const std::string& address, const uint16_t& port) {
     }
 
     std::lock_guard<std::mutex> lock(mTxMutex);
-    mPeerSockAddr.sin_family      = AF_INET;
-    mPeerSockAddr.sin_port        = htons(port);
+    mPeerSockAddr.sin_family = AF_INET;
+    mPeerSockAddr.sin_port = htons(port);
     mPeerSockAddr.sin_addr.s_addr = inet_addr(address.c_str());
 
     return true;
 }
 
 void UdpPeer::runRx() {
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         if (!proceedRx()) {
             LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
             break;
@@ -97,7 +96,7 @@ void UdpPeer::runRx() {
 }
 
 void UdpPeer::runTx() {
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         if (!proceedTx(!checkTxPipe())) {
             LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
             break;
@@ -111,9 +110,8 @@ ssize_t UdpPeer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& 
     remoteAddressSize = (socklen_t)sizeof(remoteSocketAddr);
 
     ssize_t ret = recvfrom(
-                    mSocketFd, pBuffer.get(), limit, 0,
-                    reinterpret_cast<struct sockaddr *>(&remoteSocketAddr), &remoteAddressSize
-                );
+        mSocketFd, pBuffer.get(), limit, 0,
+        reinterpret_cast<struct sockaddr*>(&remoteSocketAddr), &remoteAddressSize);
 
     if (0 > ret) {
         if (EWOULDBLOCK == errno) {
@@ -138,9 +136,8 @@ ssize_t UdpPeer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& s
         {
             std::lock_guard<std::mutex> lock(mTxMutex);
             ret = sendto(
-                            mSocketFd, pData.get(), size, 0,
-                            reinterpret_cast<struct sockaddr *>(&mPeerSockAddr), sizeof(mPeerSockAddr)
-                        );
+                mSocketFd, pData.get(), size, 0,
+                reinterpret_cast<struct sockaddr*>(&mPeerSockAddr), sizeof(mPeerSockAddr));
 
             if (0 > ret) {
                 if (EWOULDBLOCK == errno) {
@@ -161,4 +158,4 @@ ssize_t UdpPeer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& s
     return ret;
 }
 
-}   // namespace comm
+}  // namespace comm

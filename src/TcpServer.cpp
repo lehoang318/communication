@@ -29,7 +29,7 @@ std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
     struct timeval timeout;
     timeout.tv_sec = RX_TIMEOUT_S;
     timeout.tv_usec = 0;
-    ret = setsockopt (localSocketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    ret = setsockopt(localSocketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     if (0 > ret) {
         perror("Failed to configure SO_RCVTIMEO!\n");
         ::close(localSocketFd);
@@ -37,10 +37,10 @@ std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
     }
 
     struct sockaddr_in localSocketAddr;
-    localSocketAddr.sin_family      = AF_INET;
+    localSocketAddr.sin_family = AF_INET;
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
     localSocketAddr.sin_port = htons(localPort);
-    ret = bind(localSocketFd, reinterpret_cast<const struct sockaddr *>(&localSocketAddr), sizeof(localSocketAddr));
+    ret = bind(localSocketFd, reinterpret_cast<const struct sockaddr*>(&localSocketAddr), sizeof(localSocketAddr));
     if (0 > ret) {
         perror("Failed to assigns address to the socket!\n");
         ::close(localSocketFd);
@@ -80,12 +80,11 @@ void TcpServer::runRx() {
     struct sockaddr_in remoteSocketAddr;
     socklen_t remoteAddressSize = static_cast<socklen_t>(sizeof(remoteSocketAddr));
 
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         mRxPipeFd = accept(
-                                mLocalSocketFd,
-                                reinterpret_cast<struct sockaddr*>(&remoteSocketAddr),
-                                &remoteAddressSize
-                            );
+            mLocalSocketFd,
+            reinterpret_cast<struct sockaddr*>(&remoteSocketAddr),
+            &remoteAddressSize);
 
         if (!checkRxPipe()) {
             if (EAGAIN == errno) {
@@ -112,7 +111,7 @@ void TcpServer::runRx() {
 
         mTxPipeFd = mRxPipeFd;
 
-        while(!mExitFlag) {
+        while (!mExitFlag) {
             if (!proceedRx()) {
                 LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
                 break;
@@ -126,7 +125,7 @@ void TcpServer::runRx() {
 }
 
 void TcpServer::runTx() {
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         if (!proceedTx(!checkTxPipe())) {
             LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
         }
@@ -142,7 +141,7 @@ ssize_t TcpServer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t
             perror("Failed to read from TCP Socket!");
         }
     } else if (0 == ret) {
-        ret = -2;   // Stream socket peer has performed an orderly shutdown!
+        ret = -2;  // Stream socket peer has performed an orderly shutdown!
     } else {
         LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
     }
@@ -174,4 +173,4 @@ ssize_t TcpServer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
     return ret;
 }
 
-}   // namespace comm
+}  // namespace comm

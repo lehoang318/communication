@@ -71,4 +71,4 @@ inline void SyncQueue<T>::setCapLimit(size_t capLimit) {
     mCapLimit = capLimit;
 }
 
-}   // namespace dstruct
+}  // namespace dstruct

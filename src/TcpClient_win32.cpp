@@ -34,7 +34,7 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
     }
 
     BOOL enable = TRUE;
-    ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&enable), sizeof(enable));
+    ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&enable), sizeof(enable));
     if (SOCKET_ERROR == ret) {
         LOGE("Failed to enable SO_REUSEADDR (error code: %d)\n", WSAGetLastError());
         closesocket(socketFd);
@@ -52,23 +52,22 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
     }
 
     struct sockaddr_in remoteSocketAddr;
-    remoteSocketAddr.sin_family      = AF_INET;
+    remoteSocketAddr.sin_family = AF_INET;
     remoteSocketAddr.sin_addr.s_addr = inet_addr(serverAddr.c_str());
-    remoteSocketAddr.sin_port        = htons(remotePort);
+    remoteSocketAddr.sin_port = htons(remotePort);
 
     auto t0 = get_monotonic_clock();
 
     do {
-        ret = connect(socketFd, reinterpret_cast<const struct sockaddr *>(&remoteSocketAddr), sizeof(remoteSocketAddr));
+        ret = connect(socketFd, reinterpret_cast<const struct sockaddr*>(&remoteSocketAddr), sizeof(remoteSocketAddr));
         if ((0 == ret) || (WSAEISCONN == WSAGetLastError())) {
             ret = 0;
             break;
         }
     } while (
         RX_TIMEOUT_S > std::chrono::duration_cast<std::chrono::seconds>(
-                            get_monotonic_clock() - t0
-                        ).count()
-    );
+                           get_monotonic_clock() - t0)
+                           .count());
 
     if (SOCKET_ERROR == ret) {
         LOGE("Failed to connect to %s/%u (error code: %d)\n", serverAddr.c_str(), remotePort, WSAGetLastError());
@@ -101,7 +100,7 @@ void TcpClient::close() {
 }
 
 void TcpClient::runRx() {
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         if (!proceedRx()) {
             LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
             break;
@@ -110,7 +109,7 @@ void TcpClient::runRx() {
 }
 
 void TcpClient::runTx() {
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         if (!proceedTx()) {
             LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
             break;
@@ -119,7 +118,7 @@ void TcpClient::runTx() {
 }
 
 ssize_t TcpClient::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
-    ssize_t ret = ::recv(mSocketFd, reinterpret_cast<char *>(pBuffer.get()), limit, 0);
+    ssize_t ret = ::recv(mSocketFd, reinterpret_cast<char*>(pBuffer.get()), limit, 0);
     if (SOCKET_ERROR == ret) {
         int error = WSAGetLastError();
         if (WSAEWOULDBLOCK == error) {
@@ -128,7 +127,7 @@ ssize_t TcpClient::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t
             LOGE("Failed to read from TCP Socket (error code: %d)\n", error);
         }
     } else if (0 == ret) {
-        ret = -2;   // Stream socket peer has performed an orderly shutdown!
+        ret = -2;  // Stream socket peer has performed an orderly shutdown!
     } else {
         LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
     }
@@ -140,7 +139,7 @@ ssize_t TcpClient::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
     // Send data over TCP
     ssize_t ret = 0LL;
     for (int i = 0; i < TX_RETRY_COUNT; i++) {
-        ret = ::send(mSocketFd, reinterpret_cast<const char *>(pData.get()), size, 0);
+        ret = ::send(mSocketFd, reinterpret_cast<const char*>(pData.get()), size, 0);
         if (SOCKET_ERROR == ret) {
             int error = WSAGetLastError();
             if (WSAEWOULDBLOCK == error) {
@@ -159,4 +158,4 @@ ssize_t TcpClient::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
     return ret;
 }
 
-}   // namespace comm
+}  // namespace comm

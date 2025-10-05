@@ -29,7 +29,7 @@ std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
     }
 
     BOOL enable = TRUE;
-    ret = setsockopt(localSocketFd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&enable), sizeof(enable));
+    ret = setsockopt(localSocketFd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&enable), sizeof(enable));
     if (SOCKET_ERROR == ret) {
         LOGE("Failed to enable SO_REUSEADDR (error code: %d)\n", WSAGetLastError());
         closesocket(localSocketFd);
@@ -48,10 +48,10 @@ std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
     }
 
     struct sockaddr_in localSocketAddr;
-    localSocketAddr.sin_family      = AF_INET;
+    localSocketAddr.sin_family = AF_INET;
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
     localSocketAddr.sin_port = htons(localPort);
-    ret = bind(localSocketFd, reinterpret_cast<const struct sockaddr *>(&localSocketAddr), sizeof(localSocketAddr));
+    ret = bind(localSocketFd, reinterpret_cast<const struct sockaddr*>(&localSocketAddr), sizeof(localSocketAddr));
     if (SOCKET_ERROR == ret) {
         LOGE("Failed to assigns address to the socket (error code: %d)\n", WSAGetLastError());
         closesocket(localSocketFd);
@@ -94,12 +94,11 @@ void TcpServer::runRx() {
     struct sockaddr_in remoteSocketAddr;
     socklen_t remoteAddressSize = static_cast<socklen_t>(sizeof(remoteSocketAddr));
 
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         mRxPipeFd = accept(
-                                mLocalSocketFd,
-                                reinterpret_cast<struct sockaddr*>(&remoteSocketAddr),
-                                &remoteAddressSize
-                            );
+            mLocalSocketFd,
+            reinterpret_cast<struct sockaddr*>(&remoteSocketAddr),
+            &remoteAddressSize);
 
         if (!checkRxPipe()) {
             if (WSAEWOULDBLOCK == WSAGetLastError()) {
@@ -121,7 +120,7 @@ void TcpServer::runRx() {
 
         mTxPipeFd = mRxPipeFd;
 
-        while(!mExitFlag) {
+        while (!mExitFlag) {
             if (!proceedRx()) {
                 LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
                 break;
@@ -135,7 +134,7 @@ void TcpServer::runRx() {
 }
 
 void TcpServer::runTx() {
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         if (!proceedTx(!checkTxPipe())) {
             LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
         }
@@ -143,7 +142,7 @@ void TcpServer::runTx() {
 }
 
 ssize_t TcpServer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
-    ssize_t ret = ::recv(mRxPipeFd, reinterpret_cast<char *>(pBuffer.get()), limit, 0);
+    ssize_t ret = ::recv(mRxPipeFd, reinterpret_cast<char*>(pBuffer.get()), limit, 0);
     if (SOCKET_ERROR == ret) {
         int error = WSAGetLastError();
         if (WSAEWOULDBLOCK == error) {
@@ -152,7 +151,7 @@ ssize_t TcpServer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t
             LOGE("Failed to read from TCP Socket (error code: %d)\n", error);
         }
     } else if (0 == ret) {
-        ret = -2;   // Stream socket peer has performed an orderly shutdown!
+        ret = -2;  // Stream socket peer has performed an orderly shutdown!
     } else {
         LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
     }
@@ -164,7 +163,7 @@ ssize_t TcpServer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
     // Send data over TCP
     ssize_t ret = 0LL;
     for (int i = 0; i < TX_RETRY_COUNT; i++) {
-        ret = ::send(mTxPipeFd, reinterpret_cast<const char *>(pData.get()), size, 0);
+        ret = ::send(mTxPipeFd, reinterpret_cast<const char*>(pData.get()), size, 0);
         if (SOCKET_ERROR == ret) {
             int error = WSAGetLastError();
             if (WSAEWOULDBLOCK == error) {
@@ -185,4 +184,4 @@ ssize_t TcpServer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
     return ret;
 }
 
-}   // namespace comm
+}  // namespace comm

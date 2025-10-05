@@ -10,7 +10,7 @@
 namespace comm {
 
 class Packet {
- public:
+   public:
     Packet(Packet&& other);
 
     Packet& operator=(Packet&& other);
@@ -24,14 +24,12 @@ class Packet {
     static std::unique_ptr<Packet> create(
         const std::unique_ptr<uint8_t[]>& pPayload,
         const size_t& payloadSize,
-        const int64_t& timestampUs=-1
-    );
+        const int64_t& timestampUs = -1);
 
     static std::unique_ptr<Packet> create(
-        const uint8_t * const& pPayload,
+        const uint8_t* const& pPayload,
         const size_t& payloadSize,
-        const int64_t& timestampUs=-1
-    );
+        const int64_t& timestampUs = -1);
 
     const std::unique_ptr<uint8_t[]>& getPayload() {
         return mpPayload;
@@ -45,26 +43,24 @@ class Packet {
         return mTimestampUs;
     }
 
- protected:
+   protected:
     Packet(
         const std::unique_ptr<uint8_t[]>& pPayload,
         const size_t& payloadSize,
-        const int64_t& timestampUs
-    );
+        const int64_t& timestampUs);
 
     Packet(
-        const uint8_t * const& pPayload,
+        const uint8_t* const& pPayload,
         const size_t& payloadSize,
-        const int64_t& timestampUs
-    );
+        const int64_t& timestampUs);
 
- private:
+   private:
     std::unique_ptr<uint8_t[]> mpPayload;
     size_t mPayloadSize;
     int64_t mTimestampUs;
 };  // class Packet
 
-}   // namespace comm
+}  // namespace comm
 
 #include "inline/Packet.inl"
 

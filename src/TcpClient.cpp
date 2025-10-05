@@ -45,22 +45,21 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
     }
 
     struct sockaddr_in remoteSocketAddr;
-    remoteSocketAddr.sin_family      = AF_INET;
+    remoteSocketAddr.sin_family = AF_INET;
     remoteSocketAddr.sin_addr.s_addr = inet_addr(serverAddr.c_str());
-    remoteSocketAddr.sin_port        = htons(remotePort);
+    remoteSocketAddr.sin_port = htons(remotePort);
 
     auto t0 = get_monotonic_clock();
 
     do {
-        ret = connect(socketFd, reinterpret_cast<const struct sockaddr *>(&remoteSocketAddr), sizeof(remoteSocketAddr));
+        ret = connect(socketFd, reinterpret_cast<const struct sockaddr*>(&remoteSocketAddr), sizeof(remoteSocketAddr));
         if (0 == ret) {
             break;
         }
     } while (
         RX_TIMEOUT_S > std::chrono::duration_cast<std::chrono::seconds>(
-                            get_monotonic_clock() - t0
-                        ).count()
-    );
+                           get_monotonic_clock() - t0)
+                           .count());
 
     if (0 != ret) {
         perror("Failed to connect to server!\n");
@@ -91,7 +90,7 @@ void TcpClient::close() {
 }
 
 void TcpClient::runRx() {
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         if (!proceedRx()) {
             LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
             break;
@@ -100,7 +99,7 @@ void TcpClient::runRx() {
 }
 
 void TcpClient::runTx() {
-    while(!mExitFlag) {
+    while (!mExitFlag) {
         if (!proceedTx()) {
             LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
             break;
@@ -117,7 +116,7 @@ ssize_t TcpClient::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t
             perror("Failed to read from TCP Socket!");
         }
     } else if (0 == ret) {
-        ret = -2;   // Stream socket peer has performed an orderly shutdown!
+        ret = -2;  // Stream socket peer has performed an orderly shutdown!
     } else {
         LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
     }
@@ -148,4 +147,4 @@ ssize_t TcpClient::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
     return ret;
 }
 
-}   // namespace comm
+}  // namespace comm

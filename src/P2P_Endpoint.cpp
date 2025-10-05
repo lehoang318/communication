@@ -40,8 +40,7 @@ bool P2P_Endpoint::proceedTx(bool discard) {
 
     for (auto& pPacket : pTxPackets) {
         encode(pPacket->getPayload(), pPacket->getPayloadSize(), mTransactionId++,
-            pEncodedData, encodedSize
-        );
+               pEncodedData, encodedSize);
 
         if ((!pEncodedData) || (0 == encodedSize)) {
             LOGE("[%s][%d] Could not encode data!\n", __func__, __LINE__);
@@ -60,4 +59,4 @@ bool P2P_Endpoint::proceedTx(bool discard) {
     return true;
 }
 
-}   // namespace comm
+}  // namespace comm

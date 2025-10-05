@@ -28,7 +28,6 @@ inline Packet::Packet(
     const std::unique_ptr<uint8_t[]>& pPayload,
     const size_t& payloadSize,
     const int64_t& timestampUs) {
-
     mTimestampUs = get_elapsed_realtime_us();
     mPayloadSize = payloadSize;
     mpPayload.reset(new uint8_t[mPayloadSize]);
@@ -43,7 +42,6 @@ inline std::unique_ptr<Packet> Packet::create(
     const std::unique_ptr<uint8_t[]>& pPayload,
     const size_t& payloadSize,
     const int64_t& timestampUs) {
-
     if ((pPayload) && validate_payload_size(payloadSize)) {
         return std::unique_ptr<Packet>(
             new Packet(pPayload, payloadSize, timestampUs));
@@ -53,10 +51,9 @@ inline std::unique_ptr<Packet> Packet::create(
 }
 
 inline Packet::Packet(
-    const uint8_t * const& pPayload,
+    const uint8_t* const& pPayload,
     const size_t& payloadSize,
     const int64_t& timestampUs) {
-
     mTimestampUs = get_elapsed_realtime_us();
     mPayloadSize = payloadSize;
     mpPayload.reset(new uint8_t[mPayloadSize]);
@@ -68,10 +65,9 @@ inline Packet::Packet(
 }
 
 inline std::unique_ptr<Packet> Packet::create(
-    const uint8_t * const& pPayload,
+    const uint8_t* const& pPayload,
     const size_t& payloadSize,
     const int64_t& timestampUs) {
-
     if ((nullptr != pPayload) && validate_payload_size(payloadSize)) {
         return std::unique_ptr<Packet>(
             new Packet(pPayload, payloadSize, timestampUs));
@@ -80,4 +76,4 @@ inline std::unique_ptr<Packet> Packet::create(
     }
 }
 
-}   // namespace comm
+}  // namespace comm

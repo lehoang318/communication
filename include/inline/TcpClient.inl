@@ -19,4 +19,4 @@ inline TcpClient::~TcpClient() {
     LOGI("[%s][%d] Finalized!\n", __func__, __LINE__);
 }
 
-}   // namespace comm
+}  // namespace comm

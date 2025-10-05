@@ -9,8 +9,8 @@ enum BYTE_ORDER {
 // Reference: https://stackoverflow.com/questions/1001307/detecting-endianness-programmatically-in-a-c-program
 inline BYTE_ORDER get_byte_order() {
     const int value = 1;
-    const void * address = static_cast<const void *>(&value);
-    const unsigned char * least_significant_address = static_cast<const unsigned char *>(address);
+    const void *address = static_cast<const void *>(&value);
+    const unsigned char *least_significant_address = static_cast<const unsigned char *>(address);
     if (*least_significant_address == 0x01) {
         return ELITTLE_ENDIAN;
     } else {
@@ -18,4 +18,4 @@ inline BYTE_ORDER get_byte_order() {
     }
 }
 
-#endif // __BYTEORDER_HPP__
+#endif  // __BYTEORDER_HPP__

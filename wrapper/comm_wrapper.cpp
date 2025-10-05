@@ -1,16 +1,17 @@
-#include <cstring>
-
-#include <deque>
-#include <memory>
-#include <mutex>
-#include <string>
+#include "comm_wrapper.hpp"
 
 #include "Packet.hpp"
 #include "TcpClient.hpp"
 #include "TcpServer.hpp"
 #include "UdpPeer.hpp"
 
-#include "comm_wrapper.hpp"
+#include <cinttypes>
+#include <cstring>
+
+#include <deque>
+#include <memory>
+#include <mutex>
+#include <string>
 
 static std::unique_ptr<comm::P2P_Endpoint> p_endpoint;
 static std::mutex endpoint_mutex;
@@ -171,7 +172,7 @@ size_t comm_p2p_endpoint_recv_packets(
 
         memcpy((buffer + buffer_index), p_packet->getPayload().get(), packet_size);
         p_timestamps[packet_index] = p_packet->getTimestampUs();
-        LOGD("[%s][%d] Packet %zu (%zu bytes) at %ld (us) -> Buffer index: %zu\n",
+        LOGD("[%s][%d] Packet %zu (%zu bytes) at %" PRId64 " (us) -> Buffer index: %zu\n",
             __func__, __LINE__,
             packet_index, packet_size, p_packet->getTimestampUs(), buffer_index
         );

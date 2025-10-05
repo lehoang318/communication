@@ -3,9 +3,8 @@
 namespace comm {
 
 inline UdpPeer::UdpPeer(
-        const SOCKET& socketFd, const uint16_t& localPort,
-        const std::string& peerAddress, const uint16_t& peerPort
-) {
+    const SOCKET& socketFd, const uint16_t& localPort,
+    const std::string& peerAddress, const uint16_t& peerPort) {
     mExitFlag = false;
 
     mSocketFd = socketFd;
@@ -14,8 +13,8 @@ inline UdpPeer::UdpPeer(
     if (peerAddress.empty() || (0 == peerPort)) {
         mPeerSockAddr.sin_port = 0;
     } else {
-        mPeerSockAddr.sin_family      = AF_INET;
-        mPeerSockAddr.sin_port        = htons(peerPort);
+        mPeerSockAddr.sin_family = AF_INET;
+        mPeerSockAddr.sin_port = htons(peerPort);
         mPeerSockAddr.sin_addr.s_addr = inet_addr(peerAddress.c_str());
     }
 
@@ -33,4 +32,4 @@ inline bool UdpPeer::checkTxPipe() {
     return (0 < mPeerSockAddr.sin_port);
 }
 
-}   // namespace comm
+}  // namespace comm

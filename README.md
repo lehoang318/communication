@@ -127,3 +127,14 @@ cmake --build .
   * CMAKE Option `-DDEFINE_PROFILING=ON`: to enable profiling
   * CMAKE Option `-DBUILD_TESTS=OFF`: to disable unit tests' compilation
   * CMAKE Option `-DUSE_RAW_POINTER=ON`: to use Raw Pointers in unit tests
+
+## Dependencies
+* Common
+  * `CMake` (tested v3.30.4, v4.0.2)
+  * [Optional] `clang-format`
+
+* Ubuntu
+  * Package: `build-essential`
+
+* Windows
+  * `WinLibs` (tested `gcc-14.2.0-llvm-19.1.1-mingw-w64ucrt-12.0.0-r2`)

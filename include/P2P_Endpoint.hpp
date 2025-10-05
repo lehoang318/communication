@@ -2,17 +2,17 @@
 #define __P2P_ENPOINT_HPP__
 
 #include <errno.h>
-#include <cstdint>
 #include <unistd.h>
 
 #include <atomic>
+#include <cstdint>
 #include <deque>
 #include <memory>
 #include <mutex>
 
 #ifdef __WIN32__
 #include <WinDef.h>
-#endif   // __WIN32__
+#endif  // __WIN32__
 
 #include "Encoder.hpp"
 #include "Packet.hpp"
@@ -22,35 +22,35 @@ namespace comm {
 
 #ifdef __WIN32__
 static constexpr DWORD RX_TIMEOUT_S = 1;
-#else // __WIN32__
+#else   // __WIN32__
 static constexpr time_t RX_TIMEOUT_S = 1LL;
-#endif   // __WIN32__
+#endif  // __WIN32__
 static constexpr int TX_RETRY_COUNT = 3;
 
 class P2P_Endpoint {
- public:
+   public:
     virtual ~P2P_Endpoint() {}
 
     bool send(std::unique_ptr<Packet>& pPacket);
     bool send(std::unique_ptr<Packet>&& pPacket);
-    bool recvAll(std::deque<std::unique_ptr<Packet>>& pRxPackets, bool wait=true);
+    bool recvAll(std::deque<std::unique_ptr<Packet>>& pRxPackets, bool wait = true);
     virtual bool isPeerConnected();
 
     virtual void close() = 0;
 
- protected:
+   protected:
     P2P_Endpoint() {
         mpRxBuffer.reset(new uint8_t[MAX_FRAME_SIZE]);
         mTransactionId = 0;
     }
 
     bool proceedRx();
-    bool proceedTx(bool discard=false);
+    bool proceedTx(bool discard = false);
 
     virtual ssize_t lread(const std::unique_ptr<uint8_t[]>&, const size_t&) = 0;
     virtual ssize_t lwrite(const std::unique_ptr<uint8_t[]>&, const size_t&) = 0;
 
- private:
+   private:
     std::unique_ptr<uint8_t[]> mpRxBuffer;
     Decoder mDecoder;
     std::mutex mRxMutex;
@@ -60,8 +60,8 @@ class P2P_Endpoint {
     std::mutex mTxMutex;
 };  // class P2P_Endpoint
 
-}   // namespace comm
+}  // namespace comm
 
 #include "inline/P2P_Endpoint.inl"
 
-#endif // __P2P_ENPOINT_HPP__
+#endif  // __P2P_ENPOINT_HPP__

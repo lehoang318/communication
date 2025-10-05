@@ -3,6 +3,7 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 
+#include <cinttypes>
 #include <cstdio>
 #include <cstdint>
 #include <cstring>

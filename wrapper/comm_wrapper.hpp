@@ -1,6 +1,7 @@
 #ifndef __COMM_WRAPPER_HPP__
 #define __COMM_WRAPPER_HPP__
 
+#include <cstddef>
 #include <cstdint>
 
 extern "C" {

@@ -34,4 +34,4 @@ inline bool P2P_Endpoint::isPeerConnected() {
     return true;
 }
 
-}   // namespace comm
+}  // namespace comm

@@ -1,13 +1,15 @@
-#include <cstring>
-#include <deque>
+#include "test_vectors.hpp"
 
-#include "common.hpp"
 #include "Encoder.hpp"
 #include "Packet.hpp"
 #include "TcpClient.hpp"
 
-#include "test_vectors.hpp"
+#include "common.hpp"
 #include "util.hpp"
+
+#include <cstring>
+#include <cinttypes>
+#include <deque>
 
 #define EP_NAME "TcpClient"
 
@@ -43,8 +45,8 @@ int main(int argc, char ** argv) {
     getchar();
 
     for (size_t i = 0; i < vectors.size(); i++) {
-        LOGI("[%lld (us)] Sending packet %zu (%zu bytes) ...\n", 
-            static_cast<long long int>(get_elapsed_realtime_us()),
+        LOGI("[%" PRId64 " (us)] Sending packet %zu (%zu bytes) ...\n",
+            get_elapsed_realtime_us(),
             i, vectors_sizes[i]
         );
 #ifdef USE_RAW_POINTER
@@ -72,6 +74,8 @@ int main(int argc, char ** argv) {
 
     LOGI("Press enter to exit ...\n");
     getchar();
+
+    pEndpoint->close();
 
     return 0;
 }

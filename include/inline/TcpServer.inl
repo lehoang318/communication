@@ -42,4 +42,4 @@ inline bool TcpServer::checkTxPipe() {
 #endif  // __WIN32__
 }
 
-}   // namespace comm
+}  // namespace comm

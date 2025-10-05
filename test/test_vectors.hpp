@@ -1,6 +1,7 @@
 #ifndef _TEST_VECTORS_HPP_
 #define _TEST_VECTORS_HPP_
 
+#include <cstddef>
 #include <cstdint>
 
 #include <vector>

@@ -11,14 +11,13 @@ namespace dstruct {
 
 template <class T>
 class SyncQueue {
- public:
-    SyncQueue(int timeoutMs = DEFAULT_TIMEOUT_MS, size_t capLimit=DEFAULT_CAP_LIMIT) : 
-        mTimeoutMs(timeoutMs), mCapLimit(capLimit) {}
+   public:
+    SyncQueue(int timeoutMs = DEFAULT_TIMEOUT_MS, size_t capLimit = DEFAULT_CAP_LIMIT) : mTimeoutMs(timeoutMs), mCapLimit(capLimit) {}
     virtual ~SyncQueue() {}
 
     bool enqueue(std::unique_ptr<T>& pItem);
     bool enqueue(std::unique_ptr<T>&& pItem);
-    bool dequeue(std::deque<std::unique_ptr<T>>& items, bool wait=true);
+    bool dequeue(std::deque<std::unique_ptr<T>>& items, bool wait = true);
 
     void setTimeoutMs(int timeoutMs);
     void setCapLimit(size_t capLimit);
@@ -26,7 +25,7 @@ class SyncQueue {
     static constexpr int DEFAULT_TIMEOUT_MS = 10;
     static constexpr size_t DEFAULT_CAP_LIMIT = 1024UL;
 
- private:
+   private:
     std::deque<std::unique_ptr<T>> mQueue;
     std::mutex mMutex;
     std::condition_variable mCv;
@@ -34,8 +33,8 @@ class SyncQueue {
     std::atomic<std::size_t> mCapLimit;
 };  // class SyncQueue
 
-}   // namespace dstruct
+}  // namespace dstruct
 
 #include "inline/SyncQueue.inl"
 
-#endif // __SYNCQUEUE_HPP__
+#endif  // __SYNCQUEUE_HPP__

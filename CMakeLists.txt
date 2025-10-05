@@ -59,7 +59,7 @@ add_subdirectory(wrapper)
 # add `-DBUILD_TESTS=ON` to compile unit tests
 OPTION(BUILD_TESTS "Enable unit tests" ON) # Enabled by default
 
-# add `-DUSE_RAW_POINTER=ON` to enable debug log
+# add `-DDEFINE_USE_RAW_POINTER=ON` to enable debug log
 OPTION(DEFINE_USE_RAW_POINTER "Switch to Raw Pointers" OFF) # Disabled by default
 
 IF (BUILD_TESTS)
