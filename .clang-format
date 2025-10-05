@@ -2,3 +2,9 @@ BasedOnStyle: Google
 IndentWidth: 4
 UseTab: Never
 ColumnLimit: 0
+SortIncludes: true
+IncludeCategories:
+  - Regex: '^"(.*)"' # Matches local headers (e.g., "my_header.h")
+    SortPriority: 1
+  - Regex: '^<(.*)>' # Matches system headers (e.g., <iostream>)
+    SortPriority: 2

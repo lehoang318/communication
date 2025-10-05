@@ -1,11 +1,11 @@
 #ifndef __PACKET_HPP__
 #define __PACKET_HPP__
 
+#include "common.hpp"
+
 #include <cstdint>
 #include <cstring>
 #include <memory>
-
-#include "common.hpp"
 
 namespace comm {
 

@@ -5,6 +5,9 @@
 #include <cstdint>
 #include <cstdio>
 
+/**
+ * @brief Logging wrapper functions.
+ */
 #define LOGI(...) printf(__VA_ARGS__)
 #define LOGE(...) fprintf(stderr, __VA_ARGS__)
 
@@ -14,21 +17,19 @@
 #define LOGD(...)
 #endif
 
-#ifdef PROFILING
-// #warning "`std::chrono::system_clock` will be used as timestamp clock source"
-inline std::chrono::time_point<std::chrono::system_clock> get_monotonic_clock() {
-    return std::chrono::system_clock::now();
-}
-#else   // PROFILING
-// #warning "`std::chrono::steady_clock` will be used as timestamp clock source"
+/**
+ * @brief Returns the current time point in the monotonic clock.
+ */
 inline std::chrono::time_point<std::chrono::steady_clock> get_monotonic_clock() {
     return std::chrono::steady_clock::now();
 }
-#endif  // PROFILING
 
+/**
+ * @brief Returns the elapsed time from the 1st call in microseconds.
+ */
 inline int64_t get_elapsed_realtime_us() {
-    static auto base = get_monotonic_clock();
-    return std::chrono::duration_cast<std::chrono::microseconds>(get_monotonic_clock() - base).count();
+    static auto base = std::chrono::steady_clock::now();
+    return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - base).count();
 }
 
 namespace comm {
@@ -49,6 +50,9 @@ constexpr size_t MAX_PAYLOAD_SIZE = 1024UL;  // Avoid network fragmentation
 
 constexpr size_t MAX_FRAME_SIZE = SF_SIZE + SIZE_OF_TID + SIZE_OF_PAYLOAD_SIZE + MAX_PAYLOAD_SIZE + EF_SIZE;
 
+/**
+ * @brief Returns `false` if the payload size is greater than `MAX_PAYLOAD_SIZE`.
+ */
 inline bool validate_payload_size(const size_t& payload_size) {
     return (MAX_PAYLOAD_SIZE >= payload_size);
 }

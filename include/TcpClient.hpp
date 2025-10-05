@@ -1,11 +1,19 @@
 #ifndef __TCPCLIENT_HPP__
 #define __TCPCLIENT_HPP__
 
-#ifdef __WIN32__
-#include <winsock2.h>
+#include "P2P_Endpoint.hpp"
+#include "Packet.hpp"
+#include "common.hpp"
 
-// Need to link with Ws2_32.lib
-// #pragma comment (lib, "Ws2_32.lib")
+#include <atomic>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <thread>
+#include <unistd.h>
+
+#ifdef __WIN32__
+#include <winsock2.h>  // Need to link with Ws2_32.lib
 
 #else  // __WIN32__
 #include <arpa/inet.h>
@@ -13,18 +21,6 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #endif  // __WIN32__
-
-#include <unistd.h>
-
-#include <atomic>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <thread>
-
-#include "P2P_Endpoint.hpp"
-#include "Packet.hpp"
-#include "common.hpp"
 
 #ifndef __WIN32__
 typedef int SOCKET;
@@ -37,6 +33,14 @@ class TcpClient : public P2P_Endpoint {
     void close() override;
 
     virtual ~TcpClient();
+
+    /**
+     * @brief Create a new TcpClient object.
+     *
+     * @param[in] serverAddr The IP address of the server.
+     * @param[in] remotePort The port number of the server.
+     * @return A unique pointer to the TcpClient, or nullptr if an error occurs.
+     */
     static std::unique_ptr<TcpClient> create(const std::string& serverAddr, const uint16_t& remotePort);
 
    protected:
@@ -46,7 +50,14 @@ class TcpClient : public P2P_Endpoint {
     ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
 
    private:
+    /**
+     * @brief Rx thread.
+     */
     void runRx();
+
+    /**
+     * @brief Tx thread.
+     */
     void runTx();
 
     std::string mServerAddress;

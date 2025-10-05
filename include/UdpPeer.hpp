@@ -5,13 +5,16 @@
 #include "Packet.hpp"
 #include "common.hpp"
 
-#ifdef __WIN32__
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <sys/types.h>
+#include <thread>
 
-// Need to link with Ws2_32.lib
-// #pragma comment (lib, "Ws2_32.lib")
-// #pragma comment (lib, "Mswsock.lib")
+#ifdef __WIN32__
+#include <winsock2.h>  // Need to link with Ws2_32.lib
+#include <ws2tcpip.h>
 
 #else  // __WIN32__
 #include <arpa/inet.h>
@@ -19,14 +22,6 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #endif  // __WIN32__
-
-#include <sys/types.h>
-
-#include <cstdint>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <thread>
 
 #ifndef __WIN32__
 typedef int SOCKET;
@@ -41,6 +36,15 @@ class UdpPeer : public P2P_Endpoint {
     void close() override;
 
     virtual ~UdpPeer();
+
+    /**
+     * @brief Create a new UdpPeer object.
+     *
+     * @param[in] localPort UdpPeer shall listen on this port.
+     * @param[in] peerAddress The IP address of the peer.
+     * @param[in] peerPort The port on which the peer shall listen.
+     * @return A unique pointer to the TcpClient, or nullptr if an error occurs.
+     */
     static std::unique_ptr<UdpPeer> create(
         const uint16_t& localPort, const std::string& peerAddress, const uint16_t& peerPort);
 

@@ -1,13 +1,20 @@
 #ifndef __TCPSERVER_HPP__
 #define __TCPSERVER_HPP__
 
-#ifdef __WIN32__
-#include <winsock2.h>
-#include <ws2tcpip.h>
+#include "P2P_Endpoint.hpp"
+#include "Packet.hpp"
+#include "common.hpp"
 
-// Need to link with Ws2_32.lib
-// #pragma comment (lib, "Ws2_32.lib")
-// #pragma comment (lib, "Mswsock.lib")
+#include <atomic>
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <unistd.h>
+
+#ifdef __WIN32__
+#include <winsock2.h>  // Need to link with Ws2_32.lib
+#include <ws2tcpip.h>
 
 #else  // __WIN32__
 #include <arpa/inet.h>
@@ -15,18 +22,6 @@
 #include <sys/socket.h>
 #include <sys/time.h>
 #endif  // __WIN32__
-
-#include <unistd.h>
-
-#include <atomic>
-#include <cstdint>
-#include <memory>
-#include <mutex>
-#include <thread>
-
-#include "P2P_Endpoint.hpp"
-#include "Packet.hpp"
-#include "common.hpp"
 
 #ifndef __WIN32__
 typedef int SOCKET;
@@ -41,6 +36,13 @@ class TcpServer : public P2P_Endpoint {
     void close() override;
 
     ~TcpServer();
+
+    /**
+     * @brief Create a new TcpServer object.
+     *
+     * @param[in] localPort The server shall listen on this port.
+     * @return A unique pointer to the TcpServer, or nullptr if an error occurs.
+     */
     static std::unique_ptr<TcpServer> create(uint16_t localPort);
 
    protected:
@@ -50,22 +52,40 @@ class TcpServer : public P2P_Endpoint {
     ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
 
    private:
+    /**
+     * @brief Rx thread.
+     */
     void runRx();
+
+    /**
+     * @brief Tx thread.
+     */
     void runTx();
 
+    /**
+     * @brief Check status of file descriptor of Rx channel.
+     */
     bool checkRxPipe();
+
+    /**
+     * @brief Check status of file descriptor of Tx channel.
+     */
     bool checkTxPipe();
 
     int mLocalSocketFd;
-    // TcpServer accept only one client at a time,
-    // therefore, accept & read take place in the same thread
-    // -> no need to use std::atomic for Rx Pipe
+
+    /**
+     * @note TcpServer accept only one client at a time, therefore, accept & read take place in the same thread
+     *          -> no need to use std::atomic for Rx Pipe
+     */
     SOCKET mRxPipeFd;
+
 #ifdef __WIN32__
     std::atomic<long long unsigned int> mTxPipeFd;
 #else   // __WIN32__
     std::atomic<int> mTxPipeFd;
 #endif  // __WIN32__
+
     std::unique_ptr<std::thread> mpRxThread;
     std::unique_ptr<std::thread> mpTxThread;
     std::atomic<bool> mExitFlag;
