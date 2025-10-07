@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <memory>
 #include <mutex>
+#include <thread>
 #include <unistd.h>
 
 #ifdef __WIN32__
@@ -50,6 +51,26 @@ class P2P_Endpoint {
     }
 
     /**
+     * @brief Start internal threads.
+     */
+    void start();
+
+    /**
+     * @brief Stop internal threads.
+     */
+    void stop();
+
+    /**
+     * @brief Rx thread.
+     */
+    virtual void runRx() = 0;
+
+    /**
+     * @brief Tx thread.
+     */
+    virtual void runTx() = 0;
+
+    /**
      * @brief Process received data from Peer (non-blocking).
      */
     bool proceedRx();
@@ -76,6 +97,10 @@ class P2P_Endpoint {
      * @return The number of bytes written, or -1 if an error occurs.
      */
     virtual ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) = 0;
+
+    std::unique_ptr<std::thread> mpRxThread;
+    std::unique_ptr<std::thread> mpTxThread;
+    std::atomic<bool> mExitFlag;
 
    private:
     std::unique_ptr<uint8_t[]> mpRxBuffer;

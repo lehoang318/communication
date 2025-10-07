@@ -9,7 +9,6 @@
 #include <cstdint>
 #include <memory>
 #include <mutex>
-#include <thread>
 #include <unistd.h>
 
 #ifdef __WIN32__
@@ -47,20 +46,13 @@ class TcpServer : public P2P_Endpoint {
    protected:
     TcpServer(SOCKET localSocketFd);
 
+    void runRx() override;
+    void runTx() override;
+
     ssize_t lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) override;
     ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
 
    private:
-    /**
-     * @brief Rx thread.
-     */
-    void runRx();
-
-    /**
-     * @brief Tx thread.
-     */
-    void runTx();
-
     /**
      * @brief Check status of file descriptor of Rx channel.
      */
@@ -84,10 +76,6 @@ class TcpServer : public P2P_Endpoint {
 #else   // __WIN32__
     std::atomic<int> mTxPipeFd;
 #endif  // __WIN32__
-
-    std::unique_ptr<std::thread> mpRxThread;
-    std::unique_ptr<std::thread> mpTxThread;
-    std::atomic<bool> mExitFlag;
 
     static constexpr int BACKLOG = 1;
 };  // class TcpServer

@@ -10,7 +10,6 @@
 #include <mutex>
 #include <string>
 #include <sys/types.h>
-#include <thread>
 
 #ifdef __WIN32__
 #include <winsock2.h>  // Need to link with Ws2_32.lib
@@ -51,13 +50,13 @@ class UdpPeer : public P2P_Endpoint {
         const SOCKET& socketFd, const uint16_t& localPort,
         const std::string& peerAddress, const uint16_t& peerPort);
 
+    void runRx() override;
+    void runTx() override;
+
     ssize_t lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) override;
     ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
 
    private:
-    void runRx();
-    void runTx();
-
     bool checkTxPipe();
 
     // Local
@@ -67,10 +66,6 @@ class UdpPeer : public P2P_Endpoint {
     // Peer
     struct sockaddr_in mPeerSockAddr;
     std::mutex mTxMutex;
-
-    std::unique_ptr<std::thread> mpRxThread;
-    std::unique_ptr<std::thread> mpTxThread;
-    std::atomic<bool> mExitFlag;
 };  // class Peer
 
 }  // namespace comm

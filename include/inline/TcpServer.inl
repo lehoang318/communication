@@ -3,8 +3,6 @@
 namespace comm {
 
 inline TcpServer::TcpServer(SOCKET localSocketFd) {
-    mExitFlag = false;
-
     mLocalSocketFd = localSocketFd;
     mRxPipeFd = INVALID_SOCKET;
 #ifdef __WIN32__
@@ -13,20 +11,11 @@ inline TcpServer::TcpServer(SOCKET localSocketFd) {
     mTxPipeFd = INVALID_SOCKET;
 #endif  // __WIN32__
 
-    mpRxThread.reset(new std::thread(&TcpServer::runRx, this));
-    mpTxThread.reset(new std::thread(&TcpServer::runTx, this));
+    start();
 }
 
 inline TcpServer::~TcpServer() {
-    mExitFlag = true;
-
-    if ((mpRxThread) && (mpRxThread->joinable())) {
-        mpRxThread->join();
-    }
-
-    if ((mpTxThread) && (mpTxThread->joinable())) {
-        mpTxThread->join();
-    }
+    stop();
 
     if (0 <= mLocalSocketFd) {
 #ifdef __WIN32__

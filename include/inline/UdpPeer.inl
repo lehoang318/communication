@@ -5,7 +5,6 @@ namespace comm {
 inline UdpPeer::UdpPeer(
     const SOCKET& socketFd, const uint16_t& localPort,
     const std::string& peerAddress, const uint16_t& peerPort) {
-    mExitFlag = false;
 
     mSocketFd = socketFd;
     mLocalPort = localPort;
@@ -18,20 +17,11 @@ inline UdpPeer::UdpPeer(
         mPeerSockAddr.sin_addr.s_addr = inet_addr(peerAddress.c_str());
     }
 
-    mpRxThread.reset(new std::thread(&UdpPeer::runRx, this));
-    mpTxThread.reset(new std::thread(&UdpPeer::runTx, this));
+    start();
 }
 
 inline UdpPeer::~UdpPeer() {
-    mExitFlag = true;
-
-    if ((mpRxThread) && (mpRxThread->joinable())) {
-        mpRxThread->join();
-    }
-
-    if ((mpTxThread) && (mpTxThread->joinable())) {
-        mpTxThread->join();
-    }
+    stop();
 
     if (0 <= mSocketFd) {
 #ifdef __WIN32__

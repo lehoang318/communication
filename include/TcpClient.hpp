@@ -5,11 +5,9 @@
 #include "Packet.hpp"
 #include "common.hpp"
 
-#include <atomic>
 #include <cstdint>
 #include <memory>
 #include <string>
-#include <thread>
 #include <unistd.h>
 
 #ifdef __WIN32__
@@ -44,27 +42,16 @@ class TcpClient : public P2P_Endpoint {
    protected:
     TcpClient(const SOCKET& socketFd, const std::string serverAddr, uint16_t remotePort);
 
+    void runRx() override;
+    void runTx() override;
+
     ssize_t lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) override;
     ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
 
    private:
-    /**
-     * @brief Rx thread.
-     */
-    void runRx();
-
-    /**
-     * @brief Tx thread.
-     */
-    void runTx();
-
     std::string mServerAddress;
     uint16_t mRemotePort;
     SOCKET mSocketFd;
-
-    std::unique_ptr<std::thread> mpRxThread;
-    std::unique_ptr<std::thread> mpTxThread;
-    std::atomic<bool> mExitFlag;
 };  // class TcpClient
 
 }  // namespace comm
