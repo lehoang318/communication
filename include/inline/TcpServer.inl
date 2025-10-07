@@ -18,7 +18,26 @@ inline TcpServer::TcpServer(SOCKET localSocketFd) {
 }
 
 inline TcpServer::~TcpServer() {
-    this->close();
+    mExitFlag = true;
+
+    if ((mpRxThread) && (mpRxThread->joinable())) {
+        mpRxThread->join();
+    }
+
+    if ((mpTxThread) && (mpTxThread->joinable())) {
+        mpTxThread->join();
+    }
+
+    if (0 <= mLocalSocketFd) {
+#ifdef __WIN32__
+        closesocket(mLocalSocketFd);
+        WSACleanup();
+#else   // __WIN32__
+        ::close(mLocalSocketFd);
+#endif  // __WIN32__
+        mLocalSocketFd = -1;
+    }
+
     LOGI("[%s][%d] Finalized!\n", __func__, __LINE__);
 }
 

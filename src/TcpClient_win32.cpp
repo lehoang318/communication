@@ -81,24 +81,6 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
     return std::unique_ptr<TcpClient>(new TcpClient(socketFd, serverAddr, remotePort));
 }
 
-void TcpClient::close() {
-    mExitFlag = true;
-
-    if ((mpRxThread) && (mpRxThread->joinable())) {
-        mpRxThread->join();
-    }
-
-    if ((mpTxThread) && (mpTxThread->joinable())) {
-        mpTxThread->join();
-    }
-
-    if (0 <= mSocketFd) {
-        closesocket(mSocketFd);
-        WSACleanup();
-        mSocketFd = -1;
-    }
-}
-
 void TcpClient::runRx() {
     while (!mExitFlag) {
         if (!proceedRx()) {

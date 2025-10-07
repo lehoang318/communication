@@ -42,7 +42,6 @@ class P2P_Endpoint {
     bool recvAll(std::deque<std::unique_ptr<Packet>>& pRxPackets, bool wait = true);
 
     virtual bool isPeerConnected();
-    virtual void close() = 0;
 
    protected:
     P2P_Endpoint() {
@@ -81,11 +80,9 @@ class P2P_Endpoint {
    private:
     std::unique_ptr<uint8_t[]> mpRxBuffer;
     Decoder mDecoder;
-    std::mutex mRxMutex;
 
     dstruct::SyncQueue<Packet> mTxQueue;
     uint16_t mTransactionId;
-    std::mutex mTxMutex;
 };  // class P2P_Endpoint
 
 }  // namespace comm

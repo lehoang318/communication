@@ -30,8 +30,6 @@ namespace comm {
 
 class TcpClient : public P2P_Endpoint {
    public:
-    void close() override;
-
     virtual ~TcpClient();
 
     /**

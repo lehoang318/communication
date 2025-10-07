@@ -23,7 +23,26 @@ inline UdpPeer::UdpPeer(
 }
 
 inline UdpPeer::~UdpPeer() {
-    this->close();
+    mExitFlag = true;
+
+    if ((mpRxThread) && (mpRxThread->joinable())) {
+        mpRxThread->join();
+    }
+
+    if ((mpTxThread) && (mpTxThread->joinable())) {
+        mpTxThread->join();
+    }
+
+    if (0 <= mSocketFd) {
+#ifdef __WIN32__
+        closesocket(mSocketFd);
+        WSACleanup();
+#else   // __WIN32__
+        ::close(mSocketFd);
+#endif  // __WIN32__
+        mSocketFd = -1;
+    }
+
     LOGI("[%s][%d] Finalized!\n", __func__, __LINE__);
 }
 

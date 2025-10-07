@@ -75,7 +75,5 @@ int main(int argc, char ** argv) {
     LOGI("Press enter to exit ...\n");
     getchar();
 
-    pEndpoint->close();
-
     return 0;
 }

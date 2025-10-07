@@ -23,7 +23,6 @@ namespace comm {
  *
  * @return True if the encoding is successful, false otherwise.
  */
-
 bool encode(
     const std::unique_ptr<uint8_t[]>& pData, const size_t& size, const uint16_t& tid,
     std::unique_ptr<uint8_t[]>& pEncodedData, size_t& encodedSize);

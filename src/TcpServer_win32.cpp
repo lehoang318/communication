@@ -72,24 +72,6 @@ std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
     return std::unique_ptr<TcpServer>(new TcpServer(localSocketFd));
 }
 
-void TcpServer::close() {
-    mExitFlag = true;
-
-    if ((mpRxThread) && (mpRxThread->joinable())) {
-        mpRxThread->join();
-    }
-
-    if ((mpTxThread) && (mpTxThread->joinable())) {
-        mpTxThread->join();
-    }
-
-    if (0 <= mLocalSocketFd) {
-        closesocket(mLocalSocketFd);
-        WSACleanup();
-        mLocalSocketFd = -1;
-    }
-}
-
 void TcpServer::runRx() {
     struct sockaddr_in remoteSocketAddr;
     socklen_t remoteAddressSize = static_cast<socklen_t>(sizeof(remoteSocketAddr));

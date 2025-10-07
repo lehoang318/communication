@@ -55,23 +55,6 @@ std::unique_ptr<UdpPeer> UdpPeer::create(
     return std::unique_ptr<UdpPeer>(new UdpPeer(socketFd, localPort, peerAddress, peerPort));
 }
 
-void UdpPeer::close() {
-    mExitFlag = true;
-
-    if ((mpRxThread) && (mpRxThread->joinable())) {
-        mpRxThread->join();
-    }
-
-    if ((mpTxThread) && (mpTxThread->joinable())) {
-        mpTxThread->join();
-    }
-
-    if (0 <= mSocketFd) {
-        ::close(mSocketFd);
-        mSocketFd = -1;
-    }
-}
-
 bool UdpPeer::setDestination(const std::string& address, const uint16_t& port) {
     if (address.empty() || (0 == port)) {
         LOGE("[%s][%d] Invalid peer information (`%s`/%u)!\n", __func__, __LINE__, address.c_str(), port);

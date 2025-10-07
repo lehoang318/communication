@@ -33,7 +33,6 @@ namespace comm {
 class TcpServer : public P2P_Endpoint {
    public:
     bool isPeerConnected() override;
-    void close() override;
 
     ~TcpServer();
 

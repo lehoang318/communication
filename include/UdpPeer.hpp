@@ -33,8 +33,6 @@ class UdpPeer : public P2P_Endpoint {
    public:
     bool setDestination(const std::string& address, const uint16_t& port);
 
-    void close() override;
-
     virtual ~UdpPeer();
 
     /**

@@ -3,8 +3,6 @@
 namespace comm {
 
 bool P2P_Endpoint::proceedRx() {
-    std::lock_guard<std::mutex> lock(mRxMutex);
-
     ssize_t byteCount = lread(mpRxBuffer, MAX_FRAME_SIZE);
 
     if (0 > byteCount) {
@@ -20,8 +18,6 @@ bool P2P_Endpoint::proceedRx() {
 }
 
 bool P2P_Endpoint::proceedTx(bool discard) {
-    std::lock_guard<std::mutex> lock(mTxMutex);
-
     std::deque<std::unique_ptr<Packet>> pTxPackets;
     if (!mTxQueue.dequeue(pTxPackets) || (0 >= pTxPackets.size())) {
         // Tx queue is empty!

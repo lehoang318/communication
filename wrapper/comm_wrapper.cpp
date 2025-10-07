@@ -78,7 +78,6 @@ bool comm_udp_peer_init(const uint16_t& local_port, const char * const remote_ad
 void comm_deinit() {
     std::lock_guard<std::mutex> lock(endpoint_mutex);
     if (nullptr != p_endpoint) {
-        p_endpoint->close();
         p_endpoint = nullptr;
     }
 }
