@@ -7,7 +7,7 @@ std::unique_ptr<UdpPeer> UdpPeer::create(
     std::unique_ptr<UdpPeer> udpPeer;
 
     if (0 == localPort) {
-        LOGE("[%s][%d] Peer 's Port must be a positive value!\n", __func__, __LINE__);
+        LOGI("Peer 's Port must be a positive value!\n", __func__, __LINE__);
         return udpPeer;
     }
 
@@ -59,13 +59,13 @@ std::unique_ptr<UdpPeer> UdpPeer::create(
         return udpPeer;
     }
 
-    LOGI("[%s][%d] Bound at port %u\n", __func__, __LINE__, localPort);
+    LOGI("Bound at port %u\n", __func__, __LINE__, localPort);
     return std::unique_ptr<UdpPeer>(new UdpPeer(socketFd, localPort, peerAddress, peerPort));
 }
 
 bool UdpPeer::setDestination(const std::string& address, const uint16_t& port) {
     if (address.empty() || (0 == port)) {
-        LOGE("[%s][%d] Invalid peer information (`%s`/%u)!\n", __func__, __LINE__, address.c_str(), port);
+        LOGI("Invalid peer information (`%s`/%u)!\n", __func__, __LINE__, address.c_str(), port);
         return false;
     }
 
@@ -75,24 +75,6 @@ bool UdpPeer::setDestination(const std::string& address, const uint16_t& port) {
     mPeerSockAddr.sin_addr.s_addr = inet_addr(address.c_str());
 
     return true;
-}
-
-void UdpPeer::runRx() {
-    while (!mExitFlag) {
-        if (!proceedRx()) {
-            LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
-            break;
-        }
-    }
-}
-
-void UdpPeer::runTx() {
-    while (!mExitFlag) {
-        if (!proceedTx(!checkTxPipe())) {
-            LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
-            break;
-        }
-    }
 }
 
 ssize_t UdpPeer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
@@ -113,9 +95,9 @@ ssize_t UdpPeer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& 
         }
     } else if (0 == ret) {
         // zero-length datagrams!
-        LOGI("[%s][%d] Zero-length datagram!\n", __func__, __LINE__);
+        LOGI("Zero-length datagram!\n", __func__, __LINE__);
     } else {
-        LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
+        LOGD("Received %zd bytes\n", __func__, __LINE__, ret);
     }
 
     return ret;
@@ -141,7 +123,7 @@ ssize_t UdpPeer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& s
             } else if (0 == ret) {
                 // Should not happen!
             } else {
-                LOGD("[%s][%d] Transmitted %zd bytes\n", __func__, __LINE__, ret);
+                LOGD("Transmitted %zd bytes\n", __func__, __LINE__, ret);
                 break;
             }
         }

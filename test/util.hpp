@@ -58,9 +58,9 @@ inline bool test(const std::deque<std::unique_ptr<comm::Packet>>& pRxPackets) {
             static_cast<long int>(pRxPackets[i]->getTimestampUs()), i, packet_size
         );
         if (ncompare(pRxPackets[i]->getPayload(), vectors[i], vectors_sizes[i])) {
-            LOGI("  -> Matched!\n");
+            LOGI(" -> Matched!\n");
         } else {
-            LOGI("  -> Not matched!\n");
+            LOGI(" -> Not matched!\n");
             result = false;
         }
 

@@ -30,11 +30,11 @@ int main(int argc, char ** argv) {
 
     LOGI("%s is ready, waiting for peer ...\n", EP_NAME);
 
-    auto t0 = get_monotonic_clock();
+    auto t0 = monotonic_now();
     while (!pEndpoint->isPeerConnected()) {
         if (
             std::chrono::seconds(10) <
-            std::chrono::duration_cast<std::chrono::seconds>(get_monotonic_clock() - t0)
+            std::chrono::duration_cast<std::chrono::seconds>(monotonic_now() - t0)
         ) {
             LOGE("Timeout!\n");
             return 1;

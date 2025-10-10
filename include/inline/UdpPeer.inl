@@ -33,12 +33,7 @@ inline UdpPeer::~UdpPeer() {
         mSocketFd = -1;
     }
 
-    LOGI("[%s][%d] Finalized!\n", __func__, __LINE__);
-}
-
-inline bool UdpPeer::checkTxPipe() {
-    std::lock_guard<std::mutex> lock(mTxMutex);
-    return (0 < mPeerSockAddr.sin_port);
+    LOGI("Finalized!\n", __func__, __LINE__);
 }
 
 }  // namespace comm

@@ -26,7 +26,7 @@ inline bool P2P_Endpoint::send(std::unique_ptr<Packet>& pPacket) {
         }
         return true;
     } else {
-        LOGE("[%s][%d] Tx packet must not be empty!\n", __func__, __LINE__);
+        LOGI("Tx packet must not be empty!\n", __func__, __LINE__);
         return false;
     }
 }
@@ -38,7 +38,7 @@ inline bool P2P_Endpoint::send(std::unique_ptr<Packet>&& pPacket) {
         }
         return true;
     } else {
-        LOGE("[%s][%d] Tx packet must not be empty!\n", __func__, __LINE__);
+        LOGI("Tx packet must not be empty!\n", __func__, __LINE__);
         return false;
     }
 }

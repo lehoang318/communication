@@ -27,27 +27,7 @@ inline TcpServer::~TcpServer() {
         mLocalSocketFd = -1;
     }
 
-    LOGI("[%s][%d] Finalized!\n", __func__, __LINE__);
-}
-
-inline bool TcpServer::isPeerConnected() {
-    return checkTxPipe();
-}
-
-inline bool TcpServer::checkRxPipe() {
-#ifdef __WIN32__
-    return (0 < mRxPipeFd) && (INVALID_SOCKET != mRxPipeFd);
-#else   // __WIN32__
-    return (0 < mRxPipeFd);
-#endif  // __WIN32__
-}
-
-inline bool TcpServer::checkTxPipe() {
-#ifdef __WIN32__
-    return (0 < mRxPipeFd) && (INVALID_SOCKET != mRxPipeFd);
-#else   // __WIN32__
-    return (0 < mTxPipeFd);
-#endif  // __WIN32__
+    LOGI("Finalized!\n", __func__, __LINE__);
 }
 
 }  // namespace comm

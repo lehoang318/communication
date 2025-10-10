@@ -6,7 +6,7 @@ std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
     std::unique_ptr<TcpServer> tcpServer;
 
     if (0 == localPort) {
-        LOGE("[%s][%d] Local Port must be a positive value!\n", __func__, __LINE__);
+        LOGI("Local Port must be a positive value!\n", __func__, __LINE__);
         return tcpServer;
     }
 
@@ -67,7 +67,7 @@ std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
         return tcpServer;
     }
 
-    LOGI("[%s][%d] TCP Server is listenning at port %u ...\n", __func__, __LINE__, localPort);
+    LOGI("TCP Server is listenning at port %u ...\n", __func__, __LINE__, localPort);
 
     return std::unique_ptr<TcpServer>(new TcpServer(localSocketFd));
 }
@@ -104,7 +104,7 @@ void TcpServer::runRx() {
 
         while (!mExitFlag) {
             if (!proceedRx()) {
-                LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
+                LOGI("Rx Pipe was broken!\n", __func__, __LINE__);
                 break;
             }
         }
@@ -118,7 +118,7 @@ void TcpServer::runRx() {
 void TcpServer::runTx() {
     while (!mExitFlag) {
         if (!proceedTx(!checkTxPipe())) {
-            LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
+            LOGI("Tx Pipe was broken!\n", __func__, __LINE__);
         }
     }
 }
@@ -135,7 +135,7 @@ ssize_t TcpServer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t
     } else if (0 == ret) {
         ret = -2;  // Stream socket peer has performed an orderly shutdown!
     } else {
-        LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
+        LOGD("Received %zd bytes\n", __func__, __LINE__, ret);
     }
 
     return ret;
@@ -158,7 +158,7 @@ ssize_t TcpServer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
         } else if (0 == ret) {
             // Should not happen!
         } else {
-            LOGD("[%s][%d] Transmitted %zd bytes\n", __func__, __LINE__, ret);
+            LOGD("Transmitted %zd bytes\n", __func__, __LINE__, ret);
             break;
         }
     }

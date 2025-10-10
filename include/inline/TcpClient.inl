@@ -24,7 +24,7 @@ inline TcpClient::~TcpClient() {
         mSocketFd = -1;
     }
 
-    LOGI("[%s][%d] Finalized!\n", __func__, __LINE__);
+    LOGI("Finalized!\n", __func__, __LINE__);
 }
 
 }  // namespace comm

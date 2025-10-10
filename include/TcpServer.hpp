@@ -31,8 +31,6 @@ namespace comm {
 
 class TcpServer : public P2P_Endpoint {
    public:
-    bool isPeerConnected() override;
-
     ~TcpServer();
 
     /**
@@ -49,20 +47,26 @@ class TcpServer : public P2P_Endpoint {
     void runRx() override;
     void runTx() override;
 
+    bool TcpServer::checkRxPipe() override {
+    #ifdef __WIN32__
+        return (0 < mRxPipeFd) && (INVALID_SOCKET != mRxPipeFd);
+    #else   // __WIN32__
+        return (0 < mRxPipeFd);
+    #endif  // __WIN32__
+    }
+
+    bool TcpServer::checkTxPipe() override {
+    #ifdef __WIN32__
+        return (0 < mRxPipeFd) && (INVALID_SOCKET != mRxPipeFd);
+    #else   // __WIN32__
+        return (0 < mTxPipeFd);
+    #endif  // __WIN32__
+    }
+
     ssize_t lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) override;
     ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
 
    private:
-    /**
-     * @brief Check status of file descriptor of Rx channel.
-     */
-    bool checkRxPipe();
-
-    /**
-     * @brief Check status of file descriptor of Tx channel.
-     */
-    bool checkTxPipe();
-
     int mLocalSocketFd;
 
     /**

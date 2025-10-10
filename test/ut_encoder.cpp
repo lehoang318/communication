@@ -18,7 +18,7 @@ bool test(const std::unique_ptr<uint8_t[]>& pdata, const size_t& size, const siz
     size_t encoded_size = 0ULL;
 
     result = comm::encode(pdata, size, tid++, pencoded_data, encoded_size);
-    LOGI("  * Step 1: encoded %zu bytes to %zu bytes\n",
+    LOGI(" * Step 1: encoded %zu bytes to %zu bytes\n",
         size, encoded_size
     );
 
@@ -27,7 +27,7 @@ bool test(const std::unique_ptr<uint8_t[]>& pdata, const size_t& size, const siz
     }
 
     // Decoding
-    LOGI("  * Step 2:\n");
+    LOGI(" * Step 2:\n");
     const uint8_t * internal_pointer = pencoded_data.get();
     std::unique_ptr<uint8_t[]> ptmp;
     size_t chunk_size;
@@ -50,13 +50,13 @@ bool test(const std::unique_ptr<uint8_t[]>& pdata, const size_t& size, const siz
             if (result) {
                 result &= ncompare(ppacket->getPayload(), pdata, size);
             }
-            LOGI("  -> Decoded %zu bytes\n",
+            LOGI(" -> Decoded %zu bytes\n",
                 ppacket->getPayloadSize()
             );
         }
     } else {
         result = false;
-        LOGI("  -> No packet has been decoded!\n");
+        LOGI(" -> No packet has been decoded!\n");
     }
 
     return result;

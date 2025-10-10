@@ -16,6 +16,8 @@
 
 #ifdef __WIN32__
 #include <WinDef.h>
+#else   // __WIN32__
+#include <sys/types.h>
 #endif  // __WIN32__
 
 namespace comm {
@@ -26,6 +28,7 @@ static constexpr DWORD RX_TIMEOUT_S = 1;
 static constexpr time_t RX_TIMEOUT_S = 1LL;
 #endif  // __WIN32__
 static constexpr int TX_RETRY_COUNT = 3;
+static constexpr long TX_RETRY_BREAK_US = 100L;
 
 class P2P_Endpoint {
    public:
@@ -42,43 +45,40 @@ class P2P_Endpoint {
      */
     bool recvAll(std::deque<std::unique_ptr<Packet>>& pRxPackets, bool wait = true);
 
-    virtual bool isPeerConnected();
-
    protected:
     P2P_Endpoint() {
-        mpRxBuffer.reset(new uint8_t[MAX_FRAME_SIZE]);
         mTransactionId = 0;
     }
 
     /**
-     * @brief Start internal threads.
+     * @brief Start internal threads. The method must only be called by the constructor of a derived class.
      */
     void start();
 
     /**
-     * @brief Stop internal threads.
+     * @brief Stop internal threads. The method must only be called by the destructor of a derived class.
      */
     void stop();
 
     /**
      * @brief Rx thread.
      */
-    virtual void runRx() = 0;
+    virtual void runRx();
 
     /**
      * @brief Tx thread.
      */
-    virtual void runTx() = 0;
+    virtual void runTx();
 
     /**
-     * @brief Process received data from Peer (non-blocking).
+     * @brief Return true if Rx Pipe is operational.
      */
-    bool proceedRx();
+    virtual bool checkRxPipe() { return true; }
 
     /**
-     * @brief Process transmit requests from higher layers (non-blocking).
+     * @brief Return true if Tx Pipe is operational.
      */
-    bool proceedTx(bool discard = false);
+    virtual bool checkTxPipe() { return true; }
 
     /**
      * @brief Read Rx buffer (non-blocking).
@@ -103,7 +103,6 @@ class P2P_Endpoint {
     std::atomic<bool> mExitFlag;
 
    private:
-    std::unique_ptr<uint8_t[]> mpRxBuffer;
     Decoder mDecoder;
 
     dstruct::SyncQueue<Packet> mTxQueue;

@@ -1,38 +1,15 @@
 #ifndef __UDPPEER_HPP__
 #define __UDPPEER_HPP__
 
-#include "P2P_Endpoint.hpp"
+#include "IP_Endpoint.hpp"
 #include "Packet.hpp"
 #include "common.hpp"
 
-#include <cstdint>
-#include <memory>
-#include <mutex>
-#include <string>
-#include <sys/types.h>
-
-#ifdef __WIN32__
-#include <winsock2.h>  // Need to link with Ws2_32.lib
-#include <ws2tcpip.h>
-
-#else  // __WIN32__
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#endif  // __WIN32__
-
-#ifndef __WIN32__
-typedef int SOCKET;
-#endif  // __WIN32__
-
 namespace comm {
 
-class UdpPeer : public P2P_Endpoint {
+class UdpPeer : public IP_Endpoint {
    public:
-    bool setDestination(const std::string& address, const uint16_t& port);
-
-    virtual ~UdpPeer();
+    virtual ~UdpPeer() {}
 
     /**
      * @brief Create a new UdpPeer object.
@@ -46,26 +23,8 @@ class UdpPeer : public P2P_Endpoint {
         const uint16_t& localPort, const std::string& peerAddress, const uint16_t& peerPort);
 
    protected:
-    UdpPeer(
-        const SOCKET& socketFd, const uint16_t& localPort,
-        const std::string& peerAddress, const uint16_t& peerPort);
+    UdpPeer(const int& socketFd, const struct sockaddr_in& peerAddress);
 
-    void runRx() override;
-    void runTx() override;
-
-    ssize_t lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) override;
-    ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
-
-   private:
-    bool checkTxPipe();
-
-    // Local
-    SOCKET mSocketFd;
-    uint16_t mLocalPort;
-
-    // Peer
-    struct sockaddr_in mPeerSockAddr;
-    std::mutex mTxMutex;
 };  // class Peer
 
 }  // namespace comm

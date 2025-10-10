@@ -23,7 +23,7 @@ const char MSG0[] = "Hello!";
 const char MSG1[] = "Goodbye!";
 uint8_t rx_buffer[128];
 
-inline std::chrono::time_point<std::chrono::steady_clock> get_monotonic_clock() {
+inline std::chrono::time_point<std::chrono::steady_clock> monotonic_now() {
     return std::chrono::steady_clock::now();
 }
 
@@ -64,7 +64,7 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    LOGI("[%s][%d] TCP Server is listenning at port %u ...\n", __func__, __LINE__, SERVER_PORT);
+    LOGI("TCP Server is listenning at port %u ...\n", __func__, __LINE__, SERVER_PORT);
 
     struct sockaddr_in remoteSocketAddr;
     socklen_t remoteAddressSize = static_cast<socklen_t>(sizeof(remoteSocketAddr));
@@ -111,16 +111,16 @@ int main(int argc, char ** argv) {
                     perror("Failed to write to TCP Socket!");
                 }
             } else if (0 == ret) {
-                LOGE("[%s][%d] Should not happen!\n", __func__, __LINE__);
+                LOGI("Should not happen!\n", __func__, __LINE__);
             } else {
-                LOGI("[%s][%d] Transmitted %d bytes\n", __func__, __LINE__, ret);
+                LOGI("Transmitted %d bytes\n", __func__, __LINE__, ret);
             }
 
             break;
         }
 
         memset(rx_buffer, 0, sizeof(rx_buffer));
-        auto t0 = get_monotonic_clock();
+        auto t0 = monotonic_now();
         while (true) {
             ret = ::recv(mRemotePipeFd, rx_buffer, sizeof(rx_buffer), 0);
             if (0 > ret) {
@@ -130,12 +130,12 @@ int main(int argc, char ** argv) {
                     perror("Failed to read from TCP Socket!");
                 }
             } else if (0 == ret) {
-                LOGE("[%s][%d] Stream socket peer has performed an orderly shutdown!\n", __func__, __LINE__);
+                LOGI("Stream socket peer has performed an orderly shutdown!\n", __func__, __LINE__);
             } else {
-                LOGI("[%s][%d] Received %d bytes: '%s' after waiting for %lld (ms)\n",
+                LOGI("Received %d bytes: '%s' after waiting for %lld (ms)\n",
                     __func__, __LINE__,
                     ret, rx_buffer,
-                    static_cast<long long int>(std::chrono::duration_cast<std::chrono::milliseconds>(get_monotonic_clock() - t0).count())
+                    static_cast<long long int>(std::chrono::duration_cast<std::chrono::milliseconds>(monotonic_now() - t0).count())
                 );
             }
 
@@ -151,9 +151,9 @@ int main(int argc, char ** argv) {
                     perror("Failed to write to TCP Socket!");
                 }
             } else if (0 == ret) {
-                LOGE("[%s][%d] Should not happen!\n", __func__, __LINE__);
+                LOGI("Should not happen!\n", __func__, __LINE__);
             } else {
-                LOGI("[%s][%d] Transmitted %d bytes\n", __func__, __LINE__, ret);
+                LOGI("Transmitted %d bytes\n", __func__, __LINE__, ret);
             }
 
             break;
@@ -164,7 +164,7 @@ int main(int argc, char ** argv) {
         ::close(mRemotePipeFd);
     }
 
-    LOGE("[%s][%d] Terminating ...\n", __func__, __LINE__);
+    LOGI("Terminating ...\n", __func__, __LINE__);
 
     ::close(localSocketFd);
     return 0;

@@ -6,12 +6,12 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
     std::unique_ptr<TcpClient> tcpClient;
 
     if (serverAddr.empty()) {
-        LOGE("[%s][%d] Server 's Address is invalid!\n", __func__, __LINE__);
+        LOGI("Server 's Address is invalid!\n", __func__, __LINE__);
         return tcpClient;
     }
 
     if (0 == remotePort) {
-        LOGE("[%s][%d] Server 's Port must be a positive value!\n", __func__, __LINE__);
+        LOGI("Server 's Port must be a positive value!\n", __func__, __LINE__);
         return tcpClient;
     }
 
@@ -56,7 +56,7 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
     remoteSocketAddr.sin_addr.s_addr = inet_addr(serverAddr.c_str());
     remoteSocketAddr.sin_port = htons(remotePort);
 
-    auto t0 = get_monotonic_clock();
+    auto t0 = monotonic_now();
 
     do {
         ret = connect(socketFd, reinterpret_cast<const struct sockaddr*>(&remoteSocketAddr), sizeof(remoteSocketAddr));
@@ -66,7 +66,7 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
         }
     } while (
         RX_TIMEOUT_S > std::chrono::duration_cast<std::chrono::seconds>(
-                           get_monotonic_clock() - t0)
+                           monotonic_now() - t0)
                            .count());
 
     if (SOCKET_ERROR == ret) {
@@ -76,27 +76,9 @@ std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, cons
         return tcpClient;
     }
 
-    LOGI("[%s][%d] Connected to %s/%u\n", __func__, __LINE__, serverAddr.c_str(), remotePort);
+    LOGI("Connected to %s/%u\n", __func__, __LINE__, serverAddr.c_str(), remotePort);
 
     return std::unique_ptr<TcpClient>(new TcpClient(socketFd, serverAddr, remotePort));
-}
-
-void TcpClient::runRx() {
-    while (!mExitFlag) {
-        if (!proceedRx()) {
-            LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
-            break;
-        }
-    }
-}
-
-void TcpClient::runTx() {
-    while (!mExitFlag) {
-        if (!proceedTx()) {
-            LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
-            break;
-        }
-    }
 }
 
 ssize_t TcpClient::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
@@ -111,7 +93,7 @@ ssize_t TcpClient::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t
     } else if (0 == ret) {
         ret = -2;  // Stream socket peer has performed an orderly shutdown!
     } else {
-        LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
+        LOGD("Received %zd bytes\n", __func__, __LINE__, ret);
     }
 
     return ret;
@@ -132,7 +114,7 @@ ssize_t TcpClient::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t&
         } else if (0 == ret) {
             // Should not happen!
         } else {
-            LOGD("[%s][%d] Transmitted %zd bytes\n", __func__, __LINE__, ret);
+            LOGD("Transmitted %zd bytes\n", __func__, __LINE__, ret);
             break;
         }
     }
