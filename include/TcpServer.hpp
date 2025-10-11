@@ -1,37 +1,28 @@
 #ifndef __TCPSERVER_HPP__
 #define __TCPSERVER_HPP__
 
-#include "P2P_Endpoint.hpp"
-#include "Packet.hpp"
-#include "common.hpp"
-
-#include <atomic>
-#include <cstdint>
-#include <memory>
-#include <mutex>
-#include <unistd.h>
-
-#ifdef __WIN32__
-#include <winsock2.h>  // Need to link with Ws2_32.lib
-#include <ws2tcpip.h>
-
-#else  // __WIN32__
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#endif  // __WIN32__
+#include "IP_Endpoint.hpp"
 
 #ifndef __WIN32__
-typedef int SOCKET;
 constexpr int INVALID_SOCKET = -1;
 #endif  // __WIN32__
 
 namespace comm {
 
-class TcpServer : public P2P_Endpoint {
+class TcpServer {
    public:
-    ~TcpServer();
+    ~TcpServer() {
+        if (0 <= mLocalSocketFd) {
+#ifdef __WIN32__
+            closesocket(mLocalSocketFd);
+            WSACleanup();
+#else   // __WIN32__
+            ::close(mLocalSocketFd);
+#endif  // __WIN32__
+        }
+
+        LOGI("Finalized!\n");
+    }
 
     /**
      * @brief Create a new TcpServer object.
@@ -39,53 +30,28 @@ class TcpServer : public P2P_Endpoint {
      * @param[in] localPort The server shall listen on this port.
      * @return A unique pointer to the TcpServer, or nullptr if an error occurs.
      */
-    static std::unique_ptr<TcpServer> create(uint16_t localPort);
-
-   protected:
-    TcpServer(SOCKET localSocketFd);
-
-    void runRx() override;
-    void runTx() override;
-
-    bool TcpServer::checkRxPipe() override {
-    #ifdef __WIN32__
-        return (0 < mRxPipeFd) && (INVALID_SOCKET != mRxPipeFd);
-    #else   // __WIN32__
-        return (0 < mRxPipeFd);
-    #endif  // __WIN32__
-    }
-
-    bool TcpServer::checkTxPipe() override {
-    #ifdef __WIN32__
-        return (0 < mRxPipeFd) && (INVALID_SOCKET != mRxPipeFd);
-    #else   // __WIN32__
-        return (0 < mTxPipeFd);
-    #endif  // __WIN32__
-    }
-
-    ssize_t lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) override;
-    ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
-
-   private:
-    int mLocalSocketFd;
+    static std::unique_ptr<TcpServer> create(const uint16_t localPort);
 
     /**
-     * @note TcpServer accept only one client at a time, therefore, accept & read take place in the same thread
-     *          -> no need to use std::atomic for Rx Pipe
+     * @brief Waiting for connection request.
+     * 
+     * @return IP_Endpoint object representing the connection with the client.
      */
-    SOCKET mRxPipeFd;
+    std::unique_ptr<IP_Endpoint> waitForClient(int& errorCode, const long timeout_ms = 1000L);
 
-#ifdef __WIN32__
-    std::atomic<long long unsigned int> mTxPipeFd;
-#else   // __WIN32__
-    std::atomic<int> mTxPipeFd;
-#endif  // __WIN32__
+   protected:
+    TcpServer(const SOCKET localSocketFd) {
+        mLocalSocketFd = localSocketFd;
+    }
 
-    static constexpr int BACKLOG = 1;
+   private:
+    SOCKET mLocalSocketFd;
+
+    static constexpr int BACKLOG = 5;
+    static constexpr long ACCEPT_RETRY_BREAK_MS = 100L;
+    static constexpr struct sockaddr_in DUMMY_SOCKADDR = {AF_INET, 0};
 };  // class TcpServer
 
 }  // namespace comm
-
-#include "inline/TcpServer.inl"
 
 #endif  // __TCPSERVER_HPP__

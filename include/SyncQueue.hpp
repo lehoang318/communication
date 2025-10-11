@@ -12,15 +12,15 @@ namespace dstruct {
 template <class T>
 class SyncQueue {
    public:
-    SyncQueue(int timeoutMs = DEFAULT_TIMEOUT_MS, size_t capLimit = DEFAULT_CAP_LIMIT) : mTimeoutMs(timeoutMs), mCapLimit(capLimit) {}
+    SyncQueue(const int timeoutMs = DEFAULT_TIMEOUT_MS, const size_t capLimit = DEFAULT_CAP_LIMIT) : mTimeoutMs(timeoutMs), mCapLimit(capLimit) {}
     virtual ~SyncQueue() {}
 
     bool enqueue(std::unique_ptr<T>& pItem);
     bool enqueue(std::unique_ptr<T>&& pItem);
-    bool dequeue(std::deque<std::unique_ptr<T>>& items, bool wait = true);
+    bool dequeue(std::deque<std::unique_ptr<T>>& items, const bool wait = true);
 
-    void setTimeoutMs(int timeoutMs);
-    void setCapLimit(size_t capLimit);
+    void setTimeoutMs(const int timeoutMs);
+    void setCapLimit(const size_t capLimit);
 
     static constexpr int DEFAULT_TIMEOUT_MS = 10;
     static constexpr size_t DEFAULT_CAP_LIMIT = 1024UL;

@@ -1,41 +1,58 @@
 #include "IP_Endpoint.hpp"
 
 #include <ctime>
-#include <cunistd>
 #include <memory>
 
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-#define CMSG_BUF_SIZE (128)
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
 namespace comm {
 
+int IP_Endpoint::configureSocket(const SOCKET socketFd) {
+    int enable = 1;
+    int ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+    if (0 > ret) {
+        LOGE("Failed to enable SO_REUSEADDR: %d!\n", errno);
+        return -1;
+    }
+
+    int flags = fcntl(socketFd, F_GETFL, 0);
+    if (0 > flags) {
+        LOGE("Failed to get socket flags: %d!\n", errno);
+        return -1;
+    }
+
+    ret = fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK));
+    if (0 > ret) {
+        LOGE("Failed to enable NON-BLOCKING mode: %d!\n", errno);
+        return -1;
+    }
+
+    return 0;
+}
+
 ssize_t IP_Endpoint::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
-    struct iovec bufferWrapper = {
-        .iov_base = pBuffer.get(),
-        .iov_len = limit
-    };
-    char control_buf[CMSG_BUF_SIZE];
-
-    struct msghdr msg = {
-        .msg_iov = &bufferWrapper,    // Scatter/gather array
-        .msg_iovlen = 1,
-        .msg_name = NULL,    // [TODO]
-        .msg_namelen = 0,
-        .msg_control = control_buf,  // Ancillary data
-        .msg_controllen = sizeof(control_buf)
-    };
-
-    ssize_t ret = recvmsg(mSocketFd, &msg, 0);
+    ssize_t ret = recvfrom(
+        mSocketFd,
+        pBuffer.get(),
+        limit,
+        0,              // flags
+        NULL,           // address
+        NULL            // address_len
+    );
     if (0 > ret) {
         if (EWOULDBLOCK == errno) {
             ret = 0;
         } else {
-            LOGE("Failed to read from UDP Socket: %d!\n", errno);
+            mErrorFlag = true;
+            LOGE("Failed to read from Socket: %d!\n", errno);
         }
     } else if (0 == ret) {
-        LOGW("Zero-length datagram!\n");
+        // Should not happen!!!
+        LOGW("Zero-length payload!\n");
     } else {
         // [TODO] To verify source address against mPeerSockAddr
         LOGD("Received %zd bytes\n", ret);
@@ -45,43 +62,32 @@ ssize_t IP_Endpoint::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size
 }
 
 ssize_t IP_Endpoint::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) {
-    struct iovec dataWrapper = {
-        .iov_base = pData.get(),
-        .iov_len = size
-    };
-    struct msghdr msg = {
-        .msg_iov = &dataWrapper,    // Scatter/gather array
-        .msg_iovlen = 1,
-        .msg_control = NULL, // Ancillary data (not used)
-        .msg_controllen = 0
-    };
-
-    if (0 == mPeerSockAddr.sin_port)= {
-        msg.msg_name = NULL;
-        msg.msg_namelen = 0;
-    } else {
-        msg.msg_name = &mPeerSockAddr;
-        msg.msg_namelen = sizeof(mPeerSockAddr);
-    }
-
     ssize_t ret = 0;
-    for (int i = 0; (i < TX_RETRY_COUNT); i++) {
-        ret = sendmsg(mSocketFd, &msg, 0);
+    for (int i = 0; (i < TX_RETRY_LIMIT); i++) {
+        ret = sendto(
+            mSocketFd,
+            pData.get(),
+            size,
+            0,                                          // flags
+            (const struct sockaddr *)(&mPeerSockAddr),  // dest_address
+            sizeof(mPeerSockAddr)                       // dest_address_len
+        );
         if (0 < ret) {
             LOGD("Transmitted %zd bytes\n", ret);
             break;
         } else if (0 == ret) {
             // Should not happen!!!
-            LOGW("`sendmsg()` returned 0!!!\n");
-        }   else if (EWOULDBLOCK == errno) {
+            LOGW("No data was sent via `sendmsg()`!!!\n");
+        } else if (EWOULDBLOCK == errno) {
+            ret = 0;
             LOGD("`sendmsg()` returned `EWOULDBLOCK`!\n");
         } else {
             mErrorFlag = true;
-            LOGE("Failed to write to UDP Socket: %d!\n", errno);
+            LOGE("Failed to write to Socket: %d!\n", errno);
             break;
         }
 
-        sleep_for(0, TX_RETRY_BREAK_US);    // [Risk] Shared resources' ownership?
+        sleep_for(TX_RETRY_BREAK_US);   // [Risk] Shared resources' ownership?
     }
 
     return ret;

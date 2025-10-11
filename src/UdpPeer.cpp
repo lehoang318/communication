@@ -18,30 +18,13 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
         return udpPeer;
     }
 
-    int socketFd = socket(AF_INET, SOCK_DGRAM, 0);
+    SOCKET socketFd = socket(AF_INET, SOCK_DGRAM, 0);
     if (0 > socketFd) {
         LOGE("Could not create UDP socket: %d!\n", errno);
         return udpPeer;
     }
 
-    int enable = 1;
-    int ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-    if (0 > ret) {
-        LOGE("Failed to enable SO_REUSEADDR: %d!\n", errno);
-        ::close(socketFd);
-        return udpPeer;
-    }
-
-    int flags = fcntl(socketFd, F_GETFL, 0);
-    if (0 > flags) {
-        LOGE("Failed to get socket flags: %d!\n", errno);
-        ::close(socketFd);
-        return udpPeer;
-    }
-
-    ret = fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK));
-    if (0 > ret) {
-        LOGE("Failed to enable NON-BLOCKING mode: %d!\n", errno);
+    if (0 > IP_Endpoint::configureSocket(socketFd)) {
         ::close(socketFd);
         return udpPeer;
     }
@@ -50,31 +33,33 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     localSocketAddr.sin_family = AF_INET;
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
     localSocketAddr.sin_port = htons(localPort);
-    ret = bind(socketFd, reinterpret_cast<const struct sockaddr*>(&localSocketAddr), sizeof(localSocketAddr));
+    int ret = bind(socketFd, (const struct sockaddr *)(&localSocketAddr), sizeof(localSocketAddr));
     if (0 > ret) {
-        LOGE("Failed to assigns address to the socket: %d!\n", errno);
         ::close(socketFd);
+        LOGE("Failed to assigns address to the socket: %d!\n", errno);
         return udpPeer;
     }
 
-    if (address.empty() || (0 == port)) {
-        LOGI("Invalid peer information (`%s`/%u)!\n", __func__, __LINE__, address.c_str(), port);
+    if (peerAddress.empty() || (0 == peerPort)) {
         ::close(socketFd);
-        return false;
+        LOGE("Invalid peer information: `%s`/%u!\n", peerAddress.c_str(), peerPort);
+        return udpPeer;
     }
 
-    struct sockaddr_in peerSockAddr;
-    peerSockAddr.sin_family = AF_INET;
-    ret = inet_aton(peerAddress.c_str(), &peerSockAddr.sin_addr);
-    if (0 == ret) {
+    struct sockaddr_in remoteSocketAddr;
+    remoteSocketAddr.sin_family = AF_INET;
+    in_addr_t ipv4_addr = inet_addr(peerAddress.c_str());
+    if ((INADDR_NONE == ipv4_addr) || (INADDR_ANY == ipv4_addr)) {
+        ::close(socketFd);
         LOGE("Invalid peer address: `%s`!\n", peerAddress.c_str());
         return udpPeer;
     }
-    peerSockAddr.sin_port = htons(peerPort);
+    remoteSocketAddr.sin_addr.s_addr = ipv4_addr;
+    remoteSocketAddr.sin_port = htons(peerPort);
 
-    udpPeer.reset(new IP_Endpoint(socketFd, peerSockAddr));
+    udpPeer.reset(new IP_Endpoint(socketFd, remoteSocketAddr));
 
-    LOGI("Created new UdpPeer (local port: %u)\n", localPort);
+    LOGI("Created new UdpPeer (local port: %u) <=> `%s`/%u\n", localPort, peerAddress.c_str(), peerPort);
 
     return udpPeer;
 }

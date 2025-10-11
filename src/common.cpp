@@ -9,7 +9,7 @@ int64_t get_elapsed_realtime_us() {
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - tp0).count();
 }
 
-int64_t get_elapsed_realtime_us(monotonic_time_point tp) {
+int64_t get_elapsed_realtime_us(const monotonic_time_point& tp) {
     return std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - tp).count();
 }
 
@@ -51,6 +51,6 @@ void sleep_for(long duration_us) {
     } while ((3 > i) && (ret == EINTR));
 
     if (0 != ret) {
-        LOGE("Encounterred error when executing `clock_nanosleep()`: %d!\n", errno);
+        LOGE("Encountered errors when executing `clock_nanosleep()`: %d!\n", errno);
     }
 }

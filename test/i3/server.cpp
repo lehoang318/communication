@@ -49,7 +49,7 @@ int main(int argc, char ** argv) {
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
     localSocketAddr.sin_port = htons(SERVER_PORT);
 
-    ret = bind(localSocketFd, reinterpret_cast<const struct sockaddr *>(&localSocketAddr), sizeof(localSocketAddr));
+    ret = bind(localSocketFd, (const struct sockaddr *)(&localSocketAddr), sizeof(localSocketAddr));
     if (0 > ret) {
         perror("Failed to assigns address to the socket!\n");
         ::close(localSocketFd);
@@ -64,7 +64,7 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    LOGI("TCP Server is listenning at port %u ...\n", __func__, __LINE__, SERVER_PORT);
+    LOGI("TCP Server is listenning at port %u ...\n", SERVER_PORT);
 
     struct sockaddr_in remoteSocketAddr;
     socklen_t remoteAddressSize = static_cast<socklen_t>(sizeof(remoteSocketAddr));
@@ -74,7 +74,7 @@ int main(int argc, char ** argv) {
     while(true) {
         mRemotePipeFd = accept(
                             localSocketFd,
-                            reinterpret_cast<struct sockaddr*>(&remoteSocketAddr),
+                            (struct sockaddr *)(&remoteSocketAddr),
                             &remoteAddressSize
                     );
 
@@ -111,9 +111,9 @@ int main(int argc, char ** argv) {
                     perror("Failed to write to TCP Socket!");
                 }
             } else if (0 == ret) {
-                LOGI("Should not happen!\n", __func__, __LINE__);
+                LOGI("Should not happen!\n");
             } else {
-                LOGI("Transmitted %d bytes\n", __func__, __LINE__, ret);
+                LOGI("Transmitted %d bytes\n", ret);
             }
 
             break;
@@ -130,10 +130,9 @@ int main(int argc, char ** argv) {
                     perror("Failed to read from TCP Socket!");
                 }
             } else if (0 == ret) {
-                LOGI("Stream socket peer has performed an orderly shutdown!\n", __func__, __LINE__);
+                LOGI("Stream socket peer has performed an orderly shutdown!\n");
             } else {
                 LOGI("Received %d bytes: '%s' after waiting for %lld (ms)\n",
-                    __func__, __LINE__,
                     ret, rx_buffer,
                     static_cast<long long int>(std::chrono::duration_cast<std::chrono::milliseconds>(monotonic_now() - t0).count())
                 );
@@ -151,9 +150,9 @@ int main(int argc, char ** argv) {
                     perror("Failed to write to TCP Socket!");
                 }
             } else if (0 == ret) {
-                LOGI("Should not happen!\n", __func__, __LINE__);
+                LOGI("Should not happen!\n");
             } else {
-                LOGI("Transmitted %d bytes\n", __func__, __LINE__, ret);
+                LOGI("Transmitted %d bytes\n", ret);
             }
 
             break;
@@ -164,7 +163,7 @@ int main(int argc, char ** argv) {
         ::close(mRemotePipeFd);
     }
 
-    LOGI("Terminating ...\n", __func__, __LINE__);
+    LOGI("Terminating ...\n");
 
     ::close(localSocketFd);
     return 0;

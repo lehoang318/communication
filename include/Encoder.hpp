@@ -55,7 +55,7 @@ class Decoder {
      * @param[in] wait Whether to wait until at least one packet is available.
      * @return True if at least a packet is successfully dequeued, false otherwise.
      */
-    bool dequeue(std::deque<std::unique_ptr<Packet>>& pPackets, bool wait = true);
+    bool dequeue(std::deque<std::unique_ptr<Packet>>& pPackets, const bool wait = true);
 
    private:
     /**

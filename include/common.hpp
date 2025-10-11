@@ -8,6 +8,7 @@
 #define NS_PER_US   (1000L)
 #define NS_PER_MS   (1000000L)
 #define NS_PER_S    (1000000000L)
+#define US_PER_MS   (1000L)
 #define US_PER_S    (1000000L)
 
 /**
@@ -40,12 +41,12 @@ int64_t get_elapsed_realtime_us();
 /**
  * @brief Returns the elapsed time since input time point (using Monotonic Clock).
  */
-int64_t get_elapsed_realtime_us(monotonic_time_point tp);
+int64_t get_elapsed_realtime_us(const monotonic_time_point& tp);
 
 /**
- * @brief Puts the current thread to sleep for a specified duration using CLOCK_MONOTONIC.
+ * @brief Puts the current thread to sleep for a specified duration (us) using CLOCK_MONOTONIC.
  */
-void sleep_for(long nanoseconds);
+void sleep_for(long duration_us);
 
 namespace comm {
 

@@ -22,13 +22,19 @@
 
 namespace comm {
 
+static constexpr int RETRY_LIMIT = 5;
+static constexpr long RETRY_BREAK_US = 100000L; // 100ms
+
+static constexpr long CONNECT_RETRY_BREAK_US = 100000L; // 100ms
+
 #ifdef __WIN32__
 static constexpr DWORD RX_TIMEOUT_S = 1;
 #else   // __WIN32__
 static constexpr time_t RX_TIMEOUT_S = 1LL;
 #endif  // __WIN32__
-static constexpr int TX_RETRY_COUNT = 3;
-static constexpr long TX_RETRY_BREAK_US = 100L;
+
+static constexpr int TX_RETRY_LIMIT = 3;
+static constexpr long TX_RETRY_BREAK_US = 1000L;    // 1ms
 
 class P2P_Endpoint {
    public:
@@ -43,7 +49,19 @@ class P2P_Endpoint {
     /**
      * @brief Get data from Rx queue.
      */
-    bool recvAll(std::deque<std::unique_ptr<Packet>>& pRxPackets, bool wait = true);
+    bool recvAll(std::deque<std::unique_ptr<Packet>>& pRxPackets, const bool wait = true);
+
+    /**
+     * @brief Return true if any internal thread is still alive.
+     */
+    bool isAlive();
+
+    /**
+     * @brief Request the object to stop internal threads.
+     */
+    void terminate() {
+        mExitFlag = true;
+    }
 
    protected:
     P2P_Endpoint() {
@@ -100,7 +118,9 @@ class P2P_Endpoint {
 
     std::unique_ptr<std::thread> mpRxThread;
     std::unique_ptr<std::thread> mpTxThread;
-    std::atomic<bool> mExitFlag;
+    std::atomic<bool> mRxAliveFlag {false};
+    std::atomic<bool> mTxAliveFlag {false};
+    std::atomic<bool> mExitFlag {false};
 
    private:
     Decoder mDecoder;

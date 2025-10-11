@@ -11,14 +11,23 @@
 #include <winsock2.h>  // Need to link with Ws2_32.lib
 
 #else  // __WIN32__
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+
+typedef int SOCKET;
 #endif  // __WIN32__
 
 namespace comm {
 
 class IP_Endpoint : public P2P_Endpoint {
    public:
+    IP_Endpoint(const SOCKET& socketFd, const struct sockaddr_in& peerAddress) {
+        mSocketFd = socketFd;
+        mPeerSockAddr = peerAddress;
+        start();
+    }
+
     virtual ~IP_Endpoint() {
         stop();
 
@@ -53,13 +62,14 @@ class IP_Endpoint : public P2P_Endpoint {
      */
     static std::unique_ptr<IP_Endpoint> createTcpClient(const std::string& serverAddr, const uint16_t& remotePort);
 
-   protected:
-    IP_Endpoint(const int& socketFd, const struct sockaddr_in& peerAddress) {
-        mSocketFd = socketFd;
-        mPeerSockAddr = peerAddress;
-        start();
-    }
+    /**
+     * @brief Configure socket to allow Reuse of local addresses (SO_REUSEADDR) and Non-blocking I/O.
+     * 
+     * @return 0 on success, otherwise -1.
+     */
+    static int configureSocket(const SOCKET socketFd);
 
+   protected:
     bool checkRxPipe() override {
         return !mErrorFlag;
     }
@@ -72,10 +82,10 @@ class IP_Endpoint : public P2P_Endpoint {
     ssize_t lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) override;
 
    private:
-    int mSocketFd;
+    SOCKET mSocketFd;
     struct sockaddr_in mPeerSockAddr;
 
-    std::atomic<bool> mErrorFlag{false};
+    std::atomic<bool> mErrorFlag {false};
 };  // class Peer
 
 }  // namespace comm

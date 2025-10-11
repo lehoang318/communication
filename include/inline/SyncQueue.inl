@@ -31,7 +31,7 @@ inline bool SyncQueue<T>::enqueue(std::unique_ptr<T>&& pItem) {
 }
 
 template <class T>
-inline bool SyncQueue<T>::dequeue(std::deque<std::unique_ptr<T>>& items, bool wait) {
+inline bool SyncQueue<T>::dequeue(std::deque<std::unique_ptr<T>>& items, const bool wait) {
     bool result;
 
     if (wait) {
@@ -62,12 +62,12 @@ inline bool SyncQueue<T>::dequeue(std::deque<std::unique_ptr<T>>& items, bool wa
 }
 
 template <class T>
-inline void SyncQueue<T>::setTimeoutMs(int timeoutMs) {
+inline void SyncQueue<T>::setTimeoutMs(const int timeoutMs) {
     mTimeoutMs = timeoutMs;
 }
 
 template <class T>
-inline void SyncQueue<T>::setCapLimit(size_t capLimit) {
+inline void SyncQueue<T>::setCapLimit(const size_t capLimit) {
     mCapLimit = capLimit;
 }
 

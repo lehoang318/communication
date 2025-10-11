@@ -5,12 +5,12 @@ inline bool comm::encode(
     std::unique_ptr<uint8_t[]>& pEncodedData, size_t& encodedSize) {
 #ifdef DEBUG
     if (nullptr == pData) {
-        LOGD("Input buffer is empty!\n", __func__, __LINE__);
+        LOGD("Input buffer is empty!\n");
         return false;
     }
 
     if (!validate_payload_size(size)) {
-        LOGD("Input buffer size (%zu) is not acceptable!\n", __func__, __LINE__, size);
+        LOGD("Input buffer size (%zu) is not acceptable!\n", size);
         return false;
     }
 #else   // DEBUG
@@ -48,13 +48,13 @@ inline bool comm::encode(
 }
 
 inline void comm::Decoder::feed(const std::unique_ptr<uint8_t[]>& pdata, const size_t& size) {
-    LOGD("Feed %zu bytes!\n", __func__, __LINE__, size);
+    LOGD("Feed %zu bytes!\n", size);
     for (size_t i = 0; i < size; i++) {
         proceed(pdata[i]);
     }
 }
 
-inline bool comm::Decoder::dequeue(std::deque<std::unique_ptr<Packet>>& pPackets, bool wait) {
+inline bool comm::Decoder::dequeue(std::deque<std::unique_ptr<Packet>>& pPackets, const bool wait) {
     return mDecodedQueue.dequeue(pPackets, wait);
 }
 
@@ -68,8 +68,7 @@ inline void comm::Decoder::proceed(const uint8_t& b) {
                 mState = E_TID;
             } else {
                 // Discard
-                LOGI("Expected 0x%02X but received 0x%02X!\n",
-                     __func__, __LINE__, static_cast<unsigned int>(SF), static_cast<unsigned int>(b));
+                LOGI("Expected 0x%02X but received 0x%02X!\n", static_cast<unsigned int>(SF), static_cast<unsigned int>(b));
             }
             break;
 
@@ -77,9 +76,7 @@ inline void comm::Decoder::proceed(const uint8_t& b) {
             static int tid_byte_pos = 0;
             static int delta = 0;
 
-            LOGD("TID byte %d -> shift %d bits!\n",
-                 __func__, __LINE__,
-                 tid_byte_pos, (tid_byte_pos << 3));
+            LOGD("TID byte %d -> shift %d bits!\n", tid_byte_pos, (tid_byte_pos << 3));
             mTransactionId |= (static_cast<int>(b) & 0xFF) << (tid_byte_pos++ << 3);
 
             if (SIZE_OF_TID <= static_cast<size_t>(tid_byte_pos)) {
@@ -94,18 +91,14 @@ inline void comm::Decoder::proceed(const uint8_t& b) {
                     }
 
                     if (0 == delta) {
-                        LOGI("Duplicated Transaction ID: %d -> %d!\n",
-                             __func__, __LINE__, mCachedTransactionId, mTransactionId);
+                        LOGI("Duplicated Transaction ID: %d -> %d!\n", mCachedTransactionId, mTransactionId);
                     } else if (1 < delta) {
-                        LOGI("Lost packets between (%d;%d)!\n",
-                             __func__, __LINE__, mCachedTransactionId, mTransactionId);
+                        LOGI("Lost packets between (%d;%d)!\n", mCachedTransactionId, mTransactionId);
                     } else {
-                        LOGD("Transaction ID: %d -> %d!\n",
-                             __func__, __LINE__, mCachedTransactionId, mTransactionId);
+                        LOGD("Transaction ID: %d -> %d!\n", mCachedTransactionId, mTransactionId);
                     }
                 } else {
-                    LOGD("Received 1st packet with Transaction ID: %d\n",
-                         __func__, __LINE__, mTransactionId);
+                    LOGD("Received 1st packet with Transaction ID: %d\n", mTransactionId);
                 }
 
                 mCachedTransactionId = mTransactionId;
@@ -116,9 +109,7 @@ inline void comm::Decoder::proceed(const uint8_t& b) {
 
         case E_SIZE: {
             static size_t size_byte_pos = 0;
-            LOGD("Size byte %zu -> shift %zu bits!\n",
-                 __func__, __LINE__,
-                 size_byte_pos, (size_byte_pos << 3));
+            LOGD("Size byte %zu -> shift %zu bits!\n", size_byte_pos, (size_byte_pos << 3));
             mPayloadSize |= (static_cast<size_t>(b) & 0xFFUL) << (size_byte_pos++ << 3);
 
             if (SIZE_OF_PAYLOAD_SIZE <= size_byte_pos) {
@@ -127,11 +118,11 @@ inline void comm::Decoder::proceed(const uint8_t& b) {
                 if (validate_payload_size(mPayloadSize)) {
                     mpPayload.reset(new uint8_t[mPayloadSize]);
                     mState = E_PAYLOAD;
-                    LOGD("Payload size: %zu (bytes)!\n", __func__, __LINE__, mPayloadSize);
+                    LOGD("Payload size: %zu (bytes)!\n", mPayloadSize);
                 } else {
                     // Invalid payload size!
                     mState = E_SF;
-                    LOGI("Invalid payload size: %zu!\n", __func__, __LINE__, mPayloadSize);
+                    LOGI("Invalid payload size: %zu!\n", mPayloadSize);
                 }
             }
         } break;
@@ -153,12 +144,10 @@ inline void comm::Decoder::proceed(const uint8_t& b) {
                     LOGE("Decoder Queue is full!\n");
                 }
 
-                LOGD("Decoded a packet with %zu bytes payload at %lld (us)!\n",
-                     __func__, __LINE__, mPayloadSize, static_cast<long long int>(timestampUs));
+                LOGD("Decoded a packet with %zu bytes payload at %lld (us)!\n", mPayloadSize, static_cast<long long int>(timestampUs));
             } else {
                 // Discard
-                LOGI("Expected 0x%02X but received 0x%02X!\n",
-                     __func__, __LINE__, EF, b);
+                LOGI("Expected 0x%02X but received 0x%02X!\n", EF, b);
             }
         }
             // break;
