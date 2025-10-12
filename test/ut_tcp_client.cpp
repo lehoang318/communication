@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         std::string(argv[1]), static_cast<uint16_t>(atoi(argv[2])));
 
     if (!pEndpoint) {
-        LOGE("Could not connect to TCP Server (%s/%s)!\n", argv[1], argv[2]);
+        LOGE("Could not connect to TCP Server (%s/%s)!!!\n", argv[1], argv[2]);
         return 1;
     }
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
             LOGI("-> Failed!\n");
         }
     } else {
-        LOGE("Rx Queue is empty!\n");
+        LOGE("Rx Queue is empty!!!\n");
     }
 
     LOGI("Press enter to exit ...\n");

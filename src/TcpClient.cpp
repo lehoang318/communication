@@ -13,18 +13,18 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     std::unique_ptr<IP_Endpoint> tcpClient;
 
     if (serverAddr.empty()) {
-        LOGE("Server 's Address is invalid!\n");
+        LOGE("Server 's Address is invalid!!!\n");
         return tcpClient;
     }
 
     if (0 == remotePort) {
-        LOGE("Server 's Port must be a positive value!\n");
+        LOGE("Server 's Port must be a positive value!!!\n");
         return tcpClient;
     }
 
     SOCKET socketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (0 > socketFd) {
-        LOGE("Could not create TCP socket: %d!\n", errno);
+        LOGE("Could not create TCP socket: %d!!!\n", errno);
         return tcpClient;
     }
 
@@ -38,7 +38,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     in_addr_t ipv4_addr = inet_addr(serverAddr.c_str());
     if ((INADDR_NONE == ipv4_addr) || (INADDR_ANY == ipv4_addr)) {
         ::close(socketFd);
-        LOGE("Invalid server address: `%s`!\n", serverAddr.c_str());
+        LOGE("Invalid server address: `%s`!!!\n", serverAddr.c_str());
         return tcpClient;
     }
     remoteSocketAddr.sin_addr.s_addr = ipv4_addr;
@@ -61,13 +61,13 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
 
     if (0 != ret) {
         ::close(socketFd);
-        LOGE("Failed to connect to %s/%u: %d\n", serverAddr.c_str(), remotePort, errno);
+        LOGE("Failed to connect to %s/%u: %d!!!\n", serverAddr.c_str(), remotePort, errno);
         return tcpClient;
     }
 
     tcpClient.reset(new IP_Endpoint(socketFd, remoteSocketAddr));
 
-    LOGI("Connected to %s/%u\n", serverAddr.c_str(), remotePort);
+    LOGI("Connected to %s/%u.\n", serverAddr.c_str(), remotePort);
 
     return tcpClient;
 }

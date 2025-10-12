@@ -13,19 +13,19 @@ int IP_Endpoint::configureSocket(const SOCKET socketFd) {
     int enable = 1;
     int ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
     if (0 > ret) {
-        LOGE("Failed to enable SO_REUSEADDR: %d!\n", errno);
+        LOGE("Failed to enable SO_REUSEADDR: %d!!!\n", errno);
         return -1;
     }
 
     int flags = fcntl(socketFd, F_GETFL, 0);
     if (0 > flags) {
-        LOGE("Failed to get socket flags: %d!\n", errno);
+        LOGE("Failed to get socket flags: %d!!!\n", errno);
         return -1;
     }
 
     ret = fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK));
     if (0 > ret) {
-        LOGE("Failed to enable NON-BLOCKING mode: %d!\n", errno);
+        LOGE("Failed to enable NON-BLOCKING mode: %d!!!\n", errno);
         return -1;
     }
 
@@ -46,14 +46,14 @@ ssize_t IP_Endpoint::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size
             ret = 0;
         } else {
             mErrorFlag = true;
-            LOGE("Failed to read from Socket: %d!\n", errno);
+            LOGE("Failed to read from Socket: %d!!!\n", errno);
         }
     } else if (0 == ret) {
         // Potential: no message is available to be received and the peer has performed an orderly shutdown.
         mErrorFlag = true;
     } else {
         // [TODO] To verify source address against mPeerSockAddr
-        LOGD("Received %zd bytes\n", ret);
+        LOGD("Received %zd bytes.\n", ret);
     }
 
     return ret;
@@ -71,17 +71,17 @@ ssize_t IP_Endpoint::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_
             sizeof(mPeerSockAddr)                      // dest_address_len
         );
         if (0 < ret) {
-            LOGD("Transmitted %zd bytes\n", ret);
+            LOGD("Transmitted %zd bytes.\n", ret);
             break;
         } else if (0 == ret) {
             // Should not happen!!!
-            LOGW("No data was sent via `sendmsg()`!!!\n");
+            LOGW("No data was sent via `sendmsg()`!\n");
         } else if (EWOULDBLOCK == errno) {
             ret = 0;
-            LOGD("`sendmsg()` returned `EWOULDBLOCK`!\n");
+            LOGD("`sendmsg()` returned `EWOULDBLOCK`.\n");
         } else {
             mErrorFlag = true;
-            LOGE("Failed to write to Socket: %d!\n", errno);
+            LOGE("Failed to write to Socket: %d!!!\n", errno);
             break;
         }
 

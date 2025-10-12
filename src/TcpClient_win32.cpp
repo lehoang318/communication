@@ -11,7 +11,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     std::unique_ptr<IP_Endpoint> tcpClient;
 
     if (serverAddr.empty()) {
-        LOGE("Server 's Address is invalid!\n");
+        LOGE("Server 's Address is invalid!!!\n");
         return tcpClient;
     }
 
@@ -23,14 +23,14 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     WSADATA wsaData;
     int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (NO_ERROR != ret) {
-        LOGE("WSAStartup() failed: %d!\n", ret);
+        LOGE("WSAStartup() failed: %d!!!\n", ret);
         return tcpClient;
     }
 
     SOCKET socketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (INVALID_SOCKET == socketFd) {
         WSACleanup();
-        LOGE("Could not create TCP socket: %d!\n", WSAGetLastError());
+        LOGE("Could not create TCP socket: %d!!!\n", WSAGetLastError());
         return tcpClient;
     }
 
@@ -46,7 +46,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     if ((INADDR_NONE == ipv4_addr) || (INADDR_ANY == ipv4_addr)) {
         closesocket(socketFd);
         WSACleanup();
-        LOGE("Invalid server address: `%s`!\n", serverAddr.c_str());
+        LOGE("Invalid server address: `%s`!!!\n", serverAddr.c_str());
         return tcpClient;
     }
     remoteSocketAddr.sin_addr.s_addr = ipv4_addr;
@@ -77,13 +77,13 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     if (SOCKET_ERROR == ret) {
         closesocket(socketFd);
         WSACleanup();
-        LOGE("Failed to connect to %s/%u: %d\n", serverAddr.c_str(), remotePort, errorCode);
+        LOGE("Failed to connect to %s/%u: %d!!!\n", serverAddr.c_str(), remotePort, errorCode);
         return tcpClient;
     }
 
     tcpClient.reset(new IP_Endpoint(socketFd, remoteSocketAddr));
 
-    LOGI("Connected to %s/%u\n", serverAddr.c_str(), remotePort);
+    LOGI("Connected to %s/%u.\n", serverAddr.c_str(), remotePort);
 
     return tcpClient;
 }

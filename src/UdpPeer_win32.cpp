@@ -11,21 +11,21 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     std::unique_ptr<IP_Endpoint> udpPeer;
 
     if ((0 == localPort) && (0 == peerPort)) {
-        LOGE("UDP Ports must be positive!\n");
+        LOGE("UDP Ports must be positive!!!\n");
         return udpPeer;
     }
 
     WSADATA wsaData;
     int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (NO_ERROR != ret) {
-        LOGE("WSAStartup() failed: %d!\n", ret);
+        LOGE("WSAStartup() failed: %d!!!\n", ret);
         return udpPeer;
     }
 
     SOCKET socketFd = socket(AF_INET, SOCK_DGRAM, 0);
     if (INVALID_SOCKET == socketFd) {
         WSACleanup();
-        LOGE("Could not create UDP socket: %d!\n", WSAGetLastError());
+        LOGE("Could not create UDP socket: %d!!!\n", WSAGetLastError());
         return udpPeer;
     }
 
@@ -43,14 +43,14 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     if (SOCKET_ERROR == ret) {
         closesocket(socketFd);
         WSACleanup();
-        LOGE("Failed to assigns address to the socket: %d!\n", WSAGetLastError());
+        LOGE("Failed to assigns address to the socket: %d!!!\n", WSAGetLastError());
         return udpPeer;
     }
 
     if (peerAddress.empty() || (0 == peerPort)) {
         closesocket(socketFd);
         WSACleanup();
-        LOGE("Invalid peer information: `%s`/%u!\n", peerAddress.c_str(), peerPort);
+        LOGE("Invalid peer information: `%s`/%u!!!\n", peerAddress.c_str(), peerPort);
         return udpPeer;
     }
 
@@ -60,7 +60,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     if ((INADDR_NONE == ipv4_addr) || (INADDR_ANY == ipv4_addr)) {
         closesocket(socketFd);
         WSACleanup();
-        LOGE("Invalid peer address: `%s`!\n", peerAddress.c_str());
+        LOGE("Invalid peer address: `%s`!!!\n", peerAddress.c_str());
         return udpPeer;
     }
     remoteSocketAddr.sin_addr.s_addr = ipv4_addr;
@@ -68,7 +68,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
 
     udpPeer.reset(new IP_Endpoint(socketFd, remoteSocketAddr));
 
-    LOGI("Created new UdpPeer (local port: %u) <=> `%s`/%u\n", localPort, peerAddress.c_str(), peerPort);
+    LOGI("Created new UdpPeer (local port: %u) <=> `%s`/%u.\n", localPort, peerAddress.c_str(), peerPort);
 
     return udpPeer;
 }

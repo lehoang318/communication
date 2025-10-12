@@ -21,7 +21,7 @@ class TcpServer {
 #endif  // __WIN32__
         }
 
-        LOGI("Finalized!\n");
+        LOGI("Finalized.\n");
     }
 
     /**

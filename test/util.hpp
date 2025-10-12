@@ -42,14 +42,14 @@ inline bool ncompare(
 inline bool test(const std::deque<std::unique_ptr<comm::Packet>>& pRxPackets) {
     const size_t EXPECTED_NUMBER_OF_PACKETS = vectors.size();
     const size_t NUMBER_OF_RX_PACKETS = pRxPackets.size();
-    LOGI("Received %zu packets!\n", NUMBER_OF_RX_PACKETS);
+    LOGI("Received %zu packets.\n", NUMBER_OF_RX_PACKETS);
 
     size_t i = 0;
     size_t packet_size;
     bool result = (EXPECTED_NUMBER_OF_PACKETS == NUMBER_OF_RX_PACKETS);
     while ((EXPECTED_NUMBER_OF_PACKETS > i) && (NUMBER_OF_RX_PACKETS > i)) {
         packet_size = pRxPackets[i]->getPayloadSize();
-        LOGI("[%ld (us)] Packet %zu (%zu bytes)\n",
+        LOGI("[%ld (us)] Packet %zu (%zu bytes).\n",
              static_cast<long int>(pRxPackets[i]->getTimestampUs()), i, packet_size);
         if (ncompare(pRxPackets[i]->getPayload(), vectors[i], vectors_sizes[i])) {
             LOGI(" -> Matched!\n");

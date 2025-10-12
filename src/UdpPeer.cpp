@@ -13,13 +13,13 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     std::unique_ptr<IP_Endpoint> udpPeer;
 
     if ((0 == localPort) && (0 == peerPort)) {
-        LOGE("UDP Ports must be positive!\n");
+        LOGE("UDP Ports must be positive!!!\n");
         return udpPeer;
     }
 
     SOCKET socketFd = socket(AF_INET, SOCK_DGRAM, 0);
     if (0 > socketFd) {
-        LOGE("Could not create UDP socket: %d!\n", errno);
+        LOGE("Could not create UDP socket: %d!!!\n", errno);
         return udpPeer;
     }
 
@@ -35,7 +35,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     int ret = bind(socketFd, (const struct sockaddr*)(&localSocketAddr), sizeof(localSocketAddr));
     if (0 > ret) {
         ::close(socketFd);
-        LOGE("Failed to assigns address to the socket: %d!\n", errno);
+        LOGE("Failed to assigns address to the socket: %d!!!\n", errno);
         return udpPeer;
     }
 
@@ -50,7 +50,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     in_addr_t ipv4_addr = inet_addr(peerAddress.c_str());
     if ((INADDR_NONE == ipv4_addr) || (INADDR_ANY == ipv4_addr)) {
         ::close(socketFd);
-        LOGE("Invalid peer address: `%s`!\n", peerAddress.c_str());
+        LOGE("Invalid peer address: `%s`!!!\n", peerAddress.c_str());
         return udpPeer;
     }
     remoteSocketAddr.sin_addr.s_addr = ipv4_addr;
@@ -58,7 +58,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
 
     udpPeer.reset(new IP_Endpoint(socketFd, remoteSocketAddr));
 
-    LOGI("Created new UdpPeer (local port: %u) <=> `%s`/%u\n", localPort, peerAddress.c_str(), peerPort);
+    LOGI("Created new UdpPeer (local port: %u) <=> `%s`/%u.\n", localPort, peerAddress.c_str(), peerPort);
 
     return udpPeer;
 }

@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         static_cast<uint16_t>(atoi(argv[1])), std::string(argv[2]), static_cast<uint16_t>(atoi(argv[3])));
 
     if (!pEndpoint) {
-        LOGE("Could not create an Udp Peer which listens at port %s!\n", argv[1]);
+        LOGE("Could not create an Udp Peer which listens at port %s!!!\n", argv[1]);
         return 1;
     }
 
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
             LOGI("-> Failed!\n");
         }
     } else {
-        LOGE("Rx Queue is empty!\n");
+        LOGE("Rx Queue is empty!!!\n");
     }
 
     LOGI("Press enter to exit ...\n");

@@ -10,21 +10,21 @@ std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     std::unique_ptr<TcpServer> tcpServer;
 
     if (0 == localPort) {
-        LOGI("Local Port must be a positive value!\n");
+        LOGE("Local Port must be a positive value!!!\n");
         return tcpServer;
     }
 
     WSADATA wsaData;
     int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (NO_ERROR != ret) {
-        LOGE("WSAStartup() failed: %d!\n", ret);
+        LOGE("WSAStartup() failed: %d!!!\n", ret);
         return tcpServer;
     }
 
     SOCKET socketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (INVALID_SOCKET == socketFd) {
         WSACleanup();
-        LOGE("Could not create TCP socket: %d!\n", WSAGetLastError());
+        LOGE("Could not create TCP socket: %d!!!\n", WSAGetLastError());
         return tcpServer;
     }
 
@@ -42,7 +42,7 @@ std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     if (SOCKET_ERROR == ret) {
         closesocket(socketFd);
         WSACleanup();
-        LOGE("Failed to assigns address to the socket: %d!\n", WSAGetLastError());
+        LOGE("Failed to assigns address to the socket: %d!!!\n", WSAGetLastError());
         return tcpServer;
     }
 
@@ -50,7 +50,7 @@ std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     if (SOCKET_ERROR == ret) {
         closesocket(socketFd);
         WSACleanup();
-        LOGE("Failed to mark the socket as a passive socket: %d!\n", WSAGetLastError());
+        LOGE("Failed to mark the socket as a passive socket: %d!!!\n", WSAGetLastError());
         return tcpServer;
     }
 
@@ -80,7 +80,7 @@ std::unique_ptr<P2P_Endpoint> TcpServer::waitForClient(int &errorCode, const lon
                 sleep_for(ACCEPT_RETRY_BREAK_MS * US_PER_MS);
             } else {
                 errorCode = WSAGetLastError();
-                LOGE("Encountered errors when executing `accept()`: %d!\n", WSAGetLastError());
+                LOGE("Encountered errors when executing `accept()`: %d!!!\n", WSAGetLastError());
                 return clientEndpoint;
             }
         } else {
@@ -97,7 +97,7 @@ std::unique_ptr<P2P_Endpoint> TcpServer::waitForClient(int &errorCode, const lon
     if (SOCKET_ERROR == ioctlsocket(socketFd, FIONBIO, &non_blocking)) {
         errorCode = WSAGetLastError();
         closesocket(socketFd);
-        LOGE("Failed to enable NON-BLOCKING mode: %d!\n", WSAGetLastError());
+        LOGE("Failed to enable NON-BLOCKING mode: %d!!!\n", WSAGetLastError());
         return clientEndpoint;
     }
 

@@ -13,13 +13,13 @@ std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     std::unique_ptr<TcpServer> tcpServer;
 
     if (0 == localPort) {
-        LOGI("Local Port must be a positive value!\n");
+        LOGE("Local Port must be a positive value!!!\n");
         return tcpServer;
     }
 
     SOCKET socketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (0 > socketFd) {
-        LOGE("Could not create TCP socket: %d!\n", errno);
+        LOGE("Could not create TCP socket: %d!!!\n", errno);
         return tcpServer;
     }
 
@@ -35,14 +35,14 @@ std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     int ret = bind(socketFd, (const struct sockaddr *)(&socketAddr), sizeof(socketAddr));
     if (0 > ret) {
         ::close(socketFd);
-        LOGE("Failed to assigns address to the socket: %d!\n", errno);
+        LOGE("Failed to assigns address to the socket: %d!!!\n", errno);
         return tcpServer;
     }
 
     ret = listen(socketFd, BACKLOG);
     if (0 != ret) {
         ::close(socketFd);
-        LOGE("Failed to mark the socket as a passive socket: %d!\n", errno);
+        LOGE("Failed to mark the socket as a passive socket: %d!!!\n", errno);
         return tcpServer;
     }
 
@@ -77,7 +77,7 @@ std::unique_ptr<P2P_Endpoint> TcpServer::waitForClient(int &errorCode, const lon
             sleep_for(ACCEPT_RETRY_BREAK_MS * US_PER_MS);
         } else {
             errorCode = errno;
-            LOGE("Encountered errors when executing `accept()`: %d!\n", errno);
+            LOGE("Encountered errors when executing `accept()`: %d!!!\n", errno);
             return clientEndpoint;
         }
     } while (deadline > monotonic_now());
@@ -90,14 +90,14 @@ std::unique_ptr<P2P_Endpoint> TcpServer::waitForClient(int &errorCode, const lon
     int flags = fcntl(socketFd, F_GETFL, 0);
     if (0 > flags) {
         ::close(socketFd);
-        LOGE("Failed to get socket flags: %d!\n", errno);
+        LOGE("Failed to get socket flags: %d!!!\n", errno);
         return clientEndpoint;
     }
 
     if (0 > fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK))) {
         errorCode = errno;
         ::close(socketFd);
-        LOGE("Failed to enable NON-BLOCKING mode: %d!\n", errno);
+        LOGE("Failed to enable NON-BLOCKING mode: %d!!!\n", errno);
         return clientEndpoint;
     }
 

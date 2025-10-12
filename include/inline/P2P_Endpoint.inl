@@ -20,7 +20,7 @@ inline void P2P_Endpoint::stop() {
     }
 
     if (isAlive()) {
-        LOGE("Failed to terminate internal threads!");
+        LOGE("Failed to terminate internal threads!!!\n");
     }
 }
 
@@ -30,26 +30,30 @@ inline bool P2P_Endpoint::isAlive() {
 
 inline bool P2P_Endpoint::send(std::unique_ptr<Packet>& pPacket) {
     if (pPacket) {
-        if (!mTxQueue.enqueue(pPacket)) {
-            LOGE("Tx Queue is full!\n");
+        if (mTxQueue.enqueue(pPacket)) {
+            return true;
+        } else {
+            LOGE("Tx Queue is full!!!\n");
         }
-        return true;
     } else {
-        LOGI("Tx packet must not be empty!\n");
-        return false;
+        LOGE("Tx packet must not be empty!!!\n");
     }
+
+    return false;
 }
 
 inline bool P2P_Endpoint::send(std::unique_ptr<Packet>&& pPacket) {
     if (pPacket) {
-        if (!mTxQueue.enqueue(pPacket)) {
-            LOGE("Tx Queue is full!\n");
+        if (mTxQueue.enqueue(pPacket)) {
+            return true;
+        } else {
+            LOGE("Tx Queue is full!!!\n");
         }
-        return true;
     } else {
-        LOGI("Tx packet must not be empty!\n");
-        return false;
+        LOGE("Tx packet must not be empty!!!\n");
     }
+
+    return false;
 }
 
 inline bool P2P_Endpoint::recvAll(std::deque<std::unique_ptr<Packet>>& pRxPackets, const bool wait) {

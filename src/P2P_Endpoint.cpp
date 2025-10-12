@@ -8,13 +8,13 @@ void P2P_Endpoint::runRx() {
 
     while (!mExitFlag) {
         if (!checkRxPipe()) {
-            LOGI("Rx Pipe was broken!\n");
+            LOGE("Rx Pipe was broken!!!\n");
             break;
         }
 
         ssize_t byteCount = lread(mpRxBuffer, MAX_FRAME_SIZE);
         if (0 > byteCount) {
-            LOGI("Could not read from lower layer!\n");
+            LOGE("Could not read from lower layer!!!\n");
             break;
         } else if (0 < byteCount) {
             mDecoder.feed(mpRxBuffer, byteCount);
@@ -35,7 +35,7 @@ void P2P_Endpoint::runTx() {
 
     while (!mExitFlag) {
         if (!checkTxPipe()) {
-            LOGI("Tx Pipe was broken!\n");
+            LOGE("Tx Pipe was broken!!!\n");
             break;
         }
 
@@ -45,7 +45,7 @@ void P2P_Endpoint::runTx() {
             continue;
         }
 
-        LOGD("%zu packets in Tx queue\n", pTxPackets.size());
+        LOGD("%zu packets in Tx queue.\n", pTxPackets.size());
 
         for (auto& pPacket : pTxPackets) {
             encode(
@@ -53,16 +53,16 @@ void P2P_Endpoint::runTx() {
                 pEncodedData, encodedSize);
 
             if ((!pEncodedData) || (0 == encodedSize)) {
-                LOGI("Could not encode data!\n");
+                LOGE("Could not encode data!!!\n");
                 continue;
             }
 
             byteCount = lwrite(pEncodedData, encodedSize);
             if (0 > byteCount) {
-                LOGI("Could not write to lower layer!\n");
+                LOGE("Could not write to lower layer!!!\n");
                 break;
             } else {
-                LOGD("Wrote %zd bytes\n", byteCount);  // [TODO] byteCount < encodedSize
+                LOGD("Wrote %zd bytes.\n", byteCount);  // [TODO] byteCount < encodedSize
             }
         }
 

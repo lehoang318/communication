@@ -40,7 +40,7 @@ class IP_Endpoint : public P2P_Endpoint {
 #endif  // __WIN32__
         }
 
-        LOGI("Finalized!\n");
+        LOGI("Finalized.\n");
     }
 
     /**

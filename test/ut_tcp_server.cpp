@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     std::unique_ptr<comm::TcpServer> pTcpServer = comm::TcpServer::create(static_cast<uint16_t>(atoi(argv[1])));
 
     if (!pTcpServer) {
-        LOGE("Could not create TCP Server which listens at port %s!\n", argv[1]);
+        LOGE("Could not create TCP Server which listens at port %s!!!\n", argv[1]);
         return 1;
     }
 
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
         LOGE("Encountered errors while waiting for connection requests: %d!!!\n", errorCode);
         return 1;
     } else if (!pEndpoint) {
-        LOGD("Timeout!\n");
+        LOGD("Timeout.\n");
         return 1;
     } else {
         LOGI("Accepted one client, press enter to sent data ...\n");
@@ -62,7 +62,7 @@ int main(int argc, char** argv) {
             LOGI("-> Failed!\n");
         }
     } else {
-        LOGE("Rx Queue is empty!\n");
+        LOGE("Rx Queue is empty!!!\n");
     }
 
     LOGI("Press enter to exit ...\n");
