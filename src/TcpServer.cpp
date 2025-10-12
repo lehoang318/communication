@@ -1,10 +1,13 @@
 #include "TcpServer.hpp"
+
 #include "IP_Endpoint.hpp"
 #include "common.hpp"
 
 #include <fcntl.h>
 
 namespace comm {
+
+constexpr struct sockaddr_in TcpServer::DUMMY_SOCKADDR;
 
 std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     std::unique_ptr<TcpServer> tcpServer;
@@ -22,7 +25,7 @@ std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
 
     if (0 > IP_Endpoint::configureSocket(socketFd)) {
         ::close(socketFd);
-		return tcpServer;
+        return tcpServer;
     }
 
     struct sockaddr_in socketAddr;
@@ -50,7 +53,7 @@ std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     return tcpServer;
 }
 
-std::unique_ptr<IP_Endpoint> TcpServer::waitForClient(int& errorCode, const long timeout_ms) {
+std::unique_ptr<P2P_Endpoint> TcpServer::waitForClient(int &errorCode, const long timeout_ms) {
     std::unique_ptr<IP_Endpoint> clientEndpoint;
     struct sockaddr_in remoteSocketAddr;
     socklen_t remoteAddressSize = (socklen_t)sizeof(remoteSocketAddr);
@@ -62,8 +65,7 @@ std::unique_ptr<IP_Endpoint> TcpServer::waitForClient(int& errorCode, const long
         socketFd = accept(
             mLocalSocketFd,
             (struct sockaddr *)(&remoteSocketAddr),
-            &remoteAddressSize
-        );
+            &remoteAddressSize);
 
         if (0 < socketFd) {
             break;

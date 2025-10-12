@@ -2,7 +2,6 @@
 
 #include <ctime>
 #include <memory>
-
 #include <unistd.h>
 
 namespace comm {
@@ -29,20 +28,20 @@ int IP_Endpoint::configureSocket(const SOCKET socketFd) {
 
 ssize_t IP_Endpoint::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
     WSABUF bufferWrapper = {
-        .len = (ULONG )limit,
-        .buf = (CHAR *)(pBuffer.get())
-    };
-    
+        .len = (ULONG)limit,
+        .buf = (CHAR*)(pBuffer.get())};
+
     ssize_t byteCount = 0;
+    DWORD flags = 0;
     int ret = WSARecvFrom(
         mSocketFd,
         &bufferWrapper, 1,
         (LPDWORD)(&byteCount),
-        0,                      // lpFlags
-        NULL,                   // lpFrom
-        NULL,                   // lpFromlen
-        NULL,                   // lpOverlapped: NULL for Non-overlapped
-        NULL                    // lpCompletionRoutine: NULL for Non-overlapped
+        &flags,  // lpFlags
+        NULL,    // lpFrom
+        NULL,    // lpFromlen
+        NULL,    // lpOverlapped: NULL for Non-overlapped
+        NULL     // lpCompletionRoutine: NULL for Non-overlapped
     );
 
     if (SOCKET_ERROR == ret) {
@@ -54,8 +53,8 @@ ssize_t IP_Endpoint::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size
             LOGE("Failed to read from UDP Socket: %d!\n", WSAGetLastError());
         }
     } else if (0 == byteCount) {
-        // Should not happen!!!
-        LOGW("Zero-length payload!\n");
+        // Potential: no message is available to be received and the peer has performed an orderly shutdown.
+        mErrorFlag = true;
     } else {
         // [TODO] To verify source address against mPeerSockAddr
         LOGD("Received %zd bytes\n", byteCount);
@@ -67,22 +66,21 @@ ssize_t IP_Endpoint::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size
 ssize_t IP_Endpoint::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) {
     WSABUF dataWrapper = {
         .len = (ULONG)size,
-        .buf = (CHAR *)(pData.get())
-    };
+        .buf = (CHAR*)(pData.get())};
 
     int ret;
     ssize_t byteCount = 0;
     for (int i = 0; (i < TX_RETRY_LIMIT); i++) {
         ret = WSASendTo(
             mSocketFd,
-            &dataWrapper,                           // lpBuffers
-            1,                                      // dwBufferCount
-            (LPDWORD)(&byteCount),                  // lpNumberOfBytesSent
-            0,                                      // dwFlags
-            (const struct sockaddr *)&mPeerSockAddr, // lpTo
-            sizeof(mPeerSockAddr),                  // iTolen
-            NULL,                                   // lpOverlapped: NULL for Non-overlapped
-            NULL                                    // lpCompletionRoutine: NULL for Non-overlapped
+            &dataWrapper,                            // lpBuffers
+            1,                                       // dwBufferCount
+            (LPDWORD)(&byteCount),                   // lpNumberOfBytesSent
+            0,                                       // dwFlags
+            (const struct sockaddr*)&mPeerSockAddr,  // lpTo
+            sizeof(mPeerSockAddr),                   // iTolen
+            NULL,                                    // lpOverlapped: NULL for Non-overlapped
+            NULL                                     // lpCompletionRoutine: NULL for Non-overlapped
         );
 
         if (0 == ret) {
@@ -111,7 +109,7 @@ ssize_t IP_Endpoint::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_
                 break;
             }
         }
-        sleep_for(TX_RETRY_BREAK_US);    // [Risk] Shared resources' ownership?
+        sleep_for(TX_RETRY_BREAK_US);  // [Risk] Shared resources' ownership?
     }
 
     return byteCount;

@@ -5,11 +5,11 @@
 #include <cstdint>
 #include <cstdio>
 
-#define NS_PER_US   (1000L)
-#define NS_PER_MS   (1000000L)
-#define NS_PER_S    (1000000000L)
-#define US_PER_MS   (1000L)
-#define US_PER_S    (1000000L)
+#define NS_PER_US (1000L)
+#define NS_PER_MS (1000000L)
+#define NS_PER_S (1000000000L)
+#define US_PER_MS (1000L)
+#define US_PER_S (1000000L)
 
 /**
  * @brief Logging wrapper functions.
@@ -46,7 +46,7 @@ int64_t get_elapsed_realtime_us(const monotonic_time_point& tp);
 /**
  * @brief Puts the current thread to sleep for a specified duration (us) using CLOCK_MONOTONIC.
  */
-void sleep_for(long duration_us);
+void sleep_for(uint32_t duration_us);
 
 namespace comm {
 

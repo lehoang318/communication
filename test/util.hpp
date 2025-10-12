@@ -1,26 +1,23 @@
 #ifndef __UTIL_HPP__
 #define __UTIL_HPP__
 
-#include <cstdint>
+#include "test_vectors.hpp"
 
+#include <cstdint>
 #include <deque>
 #include <memory>
 
-#include "test_vectors.hpp"
-
 #ifdef USE_RAW_POINTER
 #warning "Tests will use Raw Pointers"
-#else   // USE_RAW_POINTER
+#else  // USE_RAW_POINTER
 #warning "Tests will use Smart Pointers"
 #endif  // USE_RAW_POINTER
 
 inline bool ncompare(
     const std::unique_ptr<uint8_t[]>& arr0,
     const std::unique_ptr<uint8_t[]>& arr1,
-    const size_t& size
-) {
-
-    for (size_t i = 0;i < size; i++) {
+    const size_t& size) {
+    for (size_t i = 0; i < size; i++) {
         if (arr0[i] != arr1[i]) {
             return false;
         }
@@ -32,10 +29,8 @@ inline bool ncompare(
 inline bool ncompare(
     const std::unique_ptr<uint8_t[]>& arr0,
     const uint8_t* const& arr1,
-    const size_t& size
-) {
-
-    for (size_t i = 0;i < size; i++) {
+    const size_t& size) {
+    for (size_t i = 0; i < size; i++) {
         if (arr0[i] != arr1[i]) {
             return false;
         }
@@ -54,9 +49,8 @@ inline bool test(const std::deque<std::unique_ptr<comm::Packet>>& pRxPackets) {
     bool result = (EXPECTED_NUMBER_OF_PACKETS == NUMBER_OF_RX_PACKETS);
     while ((EXPECTED_NUMBER_OF_PACKETS > i) && (NUMBER_OF_RX_PACKETS > i)) {
         packet_size = pRxPackets[i]->getPayloadSize();
-        LOGI("[%ld (us)] Packet %zu (%zu bytes)\n", 
-            static_cast<long int>(pRxPackets[i]->getTimestampUs()), i, packet_size
-        );
+        LOGI("[%ld (us)] Packet %zu (%zu bytes)\n",
+             static_cast<long int>(pRxPackets[i]->getTimestampUs()), i, packet_size);
         if (ncompare(pRxPackets[i]->getPayload(), vectors[i], vectors_sizes[i])) {
             LOGI(" -> Matched!\n");
         } else {
@@ -70,4 +64,4 @@ inline bool test(const std::deque<std::unique_ptr<comm::Packet>>& pRxPackets) {
     return result;
 }
 
-#endif // __UTIL_HPP__
+#endif  // __UTIL_HPP__

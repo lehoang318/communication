@@ -39,7 +39,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     localSocketAddr.sin_family = AF_INET;
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
     localSocketAddr.sin_port = htons(localPort);
-    ret = bind(socketFd, (const struct sockaddr *)(&localSocketAddr), sizeof(localSocketAddr));
+    ret = bind(socketFd, (const struct sockaddr*)(&localSocketAddr), sizeof(localSocketAddr));
     if (SOCKET_ERROR == ret) {
         closesocket(socketFd);
         WSACleanup();

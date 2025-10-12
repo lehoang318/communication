@@ -1,8 +1,10 @@
-#include "TcpServer.hpp"
 #include "IP_Endpoint.hpp"
+#include "TcpServer.hpp"
 #include "common.hpp"
 
 namespace comm {
+
+constexpr struct sockaddr_in TcpServer::DUMMY_SOCKADDR;
 
 std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     std::unique_ptr<TcpServer> tcpServer;
@@ -59,7 +61,7 @@ std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     return tcpServer;
 }
 
-std::unique_ptr<IP_Endpoint> TcpServer::waitForClient(int& errorCode, const long timeout_ms) {
+std::unique_ptr<P2P_Endpoint> TcpServer::waitForClient(int &errorCode, const long timeout_ms) {
     std::unique_ptr<IP_Endpoint> clientEndpoint;
     struct sockaddr_in remoteSocketAddr;
     int remoteAddressSize = (int)sizeof(remoteSocketAddr);
@@ -70,9 +72,8 @@ std::unique_ptr<IP_Endpoint> TcpServer::waitForClient(int& errorCode, const long
     do {
         socketFd = accept(
             mLocalSocketFd,
-           (struct sockaddr *)(&remoteSocketAddr),
-            &remoteAddressSize
-        );
+            (struct sockaddr *)(&remoteSocketAddr),
+            &remoteAddressSize);
 
         if (INVALID_SOCKET == socketFd) {
             if (WSAEWOULDBLOCK == WSAGetLastError()) {

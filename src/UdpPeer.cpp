@@ -1,12 +1,11 @@
 #include "IP_Endpoint.hpp"
 #include "common.hpp"
 
+#include <arpa/inet.h>
 #include <cstdint>
 #include <memory>
-#include <string>
-
 #include <netinet/in.h>
-#include <arpa/inet.h>
+#include <string>
 
 namespace comm {
 
@@ -33,7 +32,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPor
     localSocketAddr.sin_family = AF_INET;
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
     localSocketAddr.sin_port = htons(localPort);
-    int ret = bind(socketFd, (const struct sockaddr *)(&localSocketAddr), sizeof(localSocketAddr));
+    int ret = bind(socketFd, (const struct sockaddr*)(&localSocketAddr), sizeof(localSocketAddr));
     if (0 > ret) {
         ::close(socketFd);
         LOGE("Failed to assigns address to the socket: %d!\n", errno);

@@ -52,7 +52,7 @@ class IP_Endpoint : public P2P_Endpoint {
      * @return A unique pointer to the TcpClient, or nullptr if an error occurs.
      */
     static std::unique_ptr<IP_Endpoint> createUdpPeer(const uint16_t& localPort, const std::string& peerAddress, const uint16_t& peerPort);
-    
+
     /**
      * @brief Create a new TcpClient object.
      *
@@ -64,7 +64,7 @@ class IP_Endpoint : public P2P_Endpoint {
 
     /**
      * @brief Configure socket to allow Reuse of local addresses (SO_REUSEADDR) and Non-blocking I/O.
-     * 
+     *
      * @return 0 on success, otherwise -1.
      */
     static int configureSocket(const SOCKET socketFd);
@@ -85,9 +85,9 @@ class IP_Endpoint : public P2P_Endpoint {
     SOCKET mSocketFd;
     struct sockaddr_in mPeerSockAddr;
 
-    std::atomic<bool> mErrorFlag {false};
+    std::atomic<bool> mErrorFlag{false};
 };  // class Peer
 
 }  // namespace comm
 
-#endif // __IP_ENDPOINT_HPP__
+#endif  // __IP_ENDPOINT_HPP__

@@ -1,54 +1,35 @@
-#include "test_vectors.hpp"
-
-#include "Encoder.hpp"
+#include "IP_Endpoint.hpp"
 #include "Packet.hpp"
-#include "UdpPeer.hpp"
-
 #include "common.hpp"
+#include "test_vectors.hpp"
 #include "util.hpp"
 
-#include <cstring>
 #include <cinttypes>
+#include <cstring>
 #include <deque>
+#include <string>
 
-#define EP_NAME "UdpPeer"
-
-int main(int argc, char ** argv) {
+int main(int argc, char** argv) {
     if (4 > argc) {
-        LOGI("Usage: %s <Local Port> <Peer Address> <Peer Port>\n", argv[0]);
+        LOGE("Usage: %s <Local Port> <Peer Address> <Peer Port>\n", argv[0]);
         return 1;
     }
 
-    std::unique_ptr<comm::P2P_Endpoint> pEndpoint = comm::UdpPeer::create(
-        static_cast<uint16_t>(atoi(argv[1])), argv[2], static_cast<uint16_t>(atoi(argv[3]))
-    );
+    std::unique_ptr<comm::P2P_Endpoint> pEndpoint = comm::IP_Endpoint::createUdpPeer(
+        static_cast<uint16_t>(atoi(argv[1])), std::string(argv[2]), static_cast<uint16_t>(atoi(argv[3])));
 
     if (!pEndpoint) {
-        LOGE("Could not create %s which listens at port %s!\n", EP_NAME, argv[1]);
+        LOGE("Could not create an Udp Peer which listens at port %s!\n", argv[1]);
         return 1;
     }
 
-    LOGI("%s is ready, waiting for peer ...\n", EP_NAME);
-
-    auto t0 = monotonic_now();
-    while (!pEndpoint->isPeerConnected()) {
-        if (
-            std::chrono::seconds(10) <
-            std::chrono::duration_cast<std::chrono::seconds>(monotonic_now() - t0)
-        ) {
-            LOGE("Timeout!\n");
-            return 1;
-        }
-    }
-
-    LOGI("Connected to peer, press enter to sent data to peer ...\n");
+    LOGI("Press enter to sent data to peer ...\n");
     getchar();
 
     for (size_t i = 0; i < vectors.size(); i++) {
         LOGI("[%" PRId64 " (us)] Sending packet %zu (%zu bytes) ...\n",
-            get_elapsed_realtime_us(),
-            i, vectors_sizes[i]
-        );
+             get_elapsed_realtime_us(),
+             i, vectors_sizes[i]);
 #ifdef USE_RAW_POINTER
         pEndpoint->send(comm::Packet::create(vectors[i], vectors_sizes[i]));
 #else   // USE_RAW_POINTER

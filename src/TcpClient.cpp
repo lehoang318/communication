@@ -1,12 +1,11 @@
 #include "IP_Endpoint.hpp"
 #include "common.hpp"
 
+#include <arpa/inet.h>
 #include <cstdint>
 #include <memory>
-#include <string>
-
-#include <arpa/inet.h>
 #include <netinet/in.h>
+#include <string>
 
 namespace comm {
 
@@ -48,7 +47,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     int ret;
     const auto deadline = monotonic_now() + std::chrono::seconds(RX_TIMEOUT_S);
     do {
-        ret = connect(socketFd, (const struct sockaddr *)(&remoteSocketAddr), sizeof(remoteSocketAddr));
+        ret = connect(socketFd, (const struct sockaddr*)(&remoteSocketAddr), sizeof(remoteSocketAddr));
         if (0 == ret) {
             break;
         } else {

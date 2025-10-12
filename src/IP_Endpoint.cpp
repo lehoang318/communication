@@ -1,13 +1,11 @@
 #include "IP_Endpoint.hpp"
 
-#include <ctime>
-#include <memory>
-
-#include <fcntl.h>
-#include <unistd.h>
-
 #include <arpa/inet.h>
+#include <ctime>
+#include <fcntl.h>
+#include <memory>
 #include <netinet/in.h>
+#include <unistd.h>
 
 namespace comm {
 
@@ -39,20 +37,20 @@ ssize_t IP_Endpoint::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size
         mSocketFd,
         pBuffer.get(),
         limit,
-        0,              // flags
-        NULL,           // address
-        NULL            // address_len
+        0,     // flags
+        NULL,  // address
+        NULL   // address_len
     );
     if (0 > ret) {
-        if (EWOULDBLOCK == errno) {
+        if ((EAGAIN == errno) || (EWOULDBLOCK == errno)) {
             ret = 0;
         } else {
             mErrorFlag = true;
             LOGE("Failed to read from Socket: %d!\n", errno);
         }
     } else if (0 == ret) {
-        // Should not happen!!!
-        LOGW("Zero-length payload!\n");
+        // Potential: no message is available to be received and the peer has performed an orderly shutdown.
+        mErrorFlag = true;
     } else {
         // [TODO] To verify source address against mPeerSockAddr
         LOGD("Received %zd bytes\n", ret);
@@ -68,9 +66,9 @@ ssize_t IP_Endpoint::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_
             mSocketFd,
             pData.get(),
             size,
-            0,                                          // flags
-            (const struct sockaddr *)(&mPeerSockAddr),  // dest_address
-            sizeof(mPeerSockAddr)                       // dest_address_len
+            0,                                         // flags
+            (const struct sockaddr*)(&mPeerSockAddr),  // dest_address
+            sizeof(mPeerSockAddr)                      // dest_address_len
         );
         if (0 < ret) {
             LOGD("Transmitted %zd bytes\n", ret);
@@ -87,7 +85,7 @@ ssize_t IP_Endpoint::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_
             break;
         }
 
-        sleep_for(TX_RETRY_BREAK_US);   // [Risk] Shared resources' ownership?
+        sleep_for(TX_RETRY_BREAK_US);  // [Risk] Shared resources' ownership?
     }
 
     return ret;

@@ -57,7 +57,7 @@ target_include_directories(comm PUBLIC include)
 
 set_target_properties(comm PROPERTIES POSITION_INDEPENDENT_CODE True)
 
-# add_subdirectory(wrapper)
+add_subdirectory(wrapper)
 
 # add `-DBUILD_TESTS=ON` to compile unit tests
 OPTION(BUILD_TESTS "Enable unit tests" ON) # Enabled by default

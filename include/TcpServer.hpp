@@ -34,10 +34,10 @@ class TcpServer {
 
     /**
      * @brief Waiting for connection request.
-     * 
-     * @return IP_Endpoint object representing the connection with the client.
+     *
+     * @return P2P_Endpoint object representing the connection with the client.
      */
-    std::unique_ptr<IP_Endpoint> waitForClient(int& errorCode, const long timeout_ms = 1000L);
+    std::unique_ptr<P2P_Endpoint> waitForClient(int& errorCode, const long timeout_ms = 1000L);
 
    protected:
     TcpServer(const SOCKET localSocketFd) {

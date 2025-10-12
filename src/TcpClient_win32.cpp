@@ -52,13 +52,21 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     remoteSocketAddr.sin_addr.s_addr = ipv4_addr;
     remoteSocketAddr.sin_port = htons(remotePort);
 
+    int errorCode = 0;
     const auto deadline = monotonic_now() + std::chrono::seconds(RX_TIMEOUT_S);
     do {
-        ret = connect(socketFd, (const struct sockaddr *)(&remoteSocketAddr), sizeof(remoteSocketAddr));
+        ret = connect(socketFd, (const struct sockaddr*)(&remoteSocketAddr), sizeof(remoteSocketAddr));
         if (0 == ret) {
+            LOGI("Connected to %s/%u.", serverAddr.c_str(), remotePort);
             break;
         } else {
-            if (WSAEWOULDBLOCK == WSAGetLastError()) {
+            // Reference: https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-connect#return-value
+            errorCode = WSAGetLastError();
+            if (WSAEISCONN == errorCode) {
+                // Socket is already connected.
+                ret = 0;
+                break;
+            } else if ((WSAEWOULDBLOCK == errorCode) || (WSAEALREADY == errorCode) || (WSAEINVAL == errorCode)) {
                 sleep_for(CONNECT_RETRY_BREAK_US);
             } else {
                 break;
@@ -69,7 +77,7 @@ std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& ser
     if (SOCKET_ERROR == ret) {
         closesocket(socketFd);
         WSACleanup();
-        LOGE("Failed to connect to %s/%u: %d\n", serverAddr.c_str(), remotePort, WSAGetLastError());
+        LOGE("Failed to connect to %s/%u: %d\n", serverAddr.c_str(), remotePort, errorCode);
         return tcpClient;
     }
 

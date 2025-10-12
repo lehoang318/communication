@@ -3,7 +3,6 @@
 
 #include <cstddef>
 #include <cstdint>
-
 #include <vector>
 
 extern std::vector<const uint8_t *> vectors;

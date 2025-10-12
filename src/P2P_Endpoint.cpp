@@ -50,8 +50,7 @@ void P2P_Endpoint::runTx() {
         for (auto& pPacket : pTxPackets) {
             encode(
                 pPacket->getPayload(), pPacket->getPayloadSize(), mTransactionId++,
-                pEncodedData, encodedSize
-            );
+                pEncodedData, encodedSize);
 
             if ((!pEncodedData) || (0 == encodedSize)) {
                 LOGI("Could not encode data!\n");
@@ -63,7 +62,7 @@ void P2P_Endpoint::runTx() {
                 LOGI("Could not write to lower layer!\n");
                 break;
             } else {
-                LOGD("Wrote %zd bytes\n", byteCount);   // [TODO] byteCount < encodedSize
+                LOGD("Wrote %zd bytes\n", byteCount);  // [TODO] byteCount < encodedSize
             }
         }
 

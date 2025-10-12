@@ -14,7 +14,7 @@ inline void P2P_Endpoint::start() {
 
 inline void P2P_Endpoint::stop() {
     mExitFlag = true;
-    
+
     for (int i = 0; (RETRY_LIMIT > i) && isAlive(); i++) {
         sleep_for(RETRY_BREAK_US);
     }
