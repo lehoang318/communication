@@ -1,133 +1,75 @@
-#include "TcpClient.hpp"
+#include "IP_Endpoint.hpp"
+#include "common.hpp"
+
+#include <arpa/inet.h>
+#include <cstdint>
+#include <memory>
+#include <netinet/in.h>
+#include <string>
 
 namespace comm {
 
-std::unique_ptr<TcpClient> TcpClient::create(const std::string& serverAddr, const uint16_t& remotePort) {
-    std::unique_ptr<TcpClient> tcpClient;
+std::unique_ptr<IP_Endpoint> IP_Endpoint::createTcpClient(const std::string& serverAddr, const uint16_t& remotePort) {
+    std::unique_ptr<IP_Endpoint> tcpClient;
 
     if (serverAddr.empty()) {
-        LOGE("[%s][%d] Server 's Address is invalid!\n", __func__, __LINE__);
+        LOGE("Server 's Address is invalid!!!\n");
         return tcpClient;
     }
 
     if (0 == remotePort) {
-        LOGE("[%s][%d] Server 's Port must be a positive value!\n", __func__, __LINE__);
+        LOGE("Server 's Port must be a positive value!!!\n");
         return tcpClient;
     }
-
-    int ret;
 
     SOCKET socketFd = socket(AF_INET, SOCK_STREAM, 0);
     if (0 > socketFd) {
-        perror("Could not create TCP socket!\n");
+        LOGE("Could not create TCP socket: %d!!!\n", errno);
         return tcpClient;
     }
 
-    int enable = 1;
-    ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-    if (0 > ret) {
-        perror("Failed to enable SO_REUSEADDR!\n");
-        ::close(socketFd);
-        return tcpClient;
-    }
-
-    int flags = fcntl(socketFd, F_GETFL, 0);
-    if (0 > flags) {
-        perror("Failed to get socket flags!\n");
-        ::close(socketFd);
-        return tcpClient;
-    }
-
-    if (0 > fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK))) {
-        perror("Failed to enable NON-BLOCKING mode!\n");
+    if (0 > IP_Endpoint::configureSocket(socketFd)) {
         ::close(socketFd);
         return tcpClient;
     }
 
     struct sockaddr_in remoteSocketAddr;
     remoteSocketAddr.sin_family = AF_INET;
-    remoteSocketAddr.sin_addr.s_addr = inet_addr(serverAddr.c_str());
+    in_addr_t ipv4_addr = inet_addr(serverAddr.c_str());
+    if ((INADDR_NONE == ipv4_addr) || (INADDR_ANY == ipv4_addr)) {
+        ::close(socketFd);
+        LOGE("Invalid server address: `%s`!!!\n", serverAddr.c_str());
+        return tcpClient;
+    }
+    remoteSocketAddr.sin_addr.s_addr = ipv4_addr;
     remoteSocketAddr.sin_port = htons(remotePort);
 
-    auto t0 = get_monotonic_clock();
-
+    int ret;
+    const auto deadline = monotonic_now() + std::chrono::seconds(RX_TIMEOUT_S);
     do {
-        ret = connect(socketFd, reinterpret_cast<const struct sockaddr*>(&remoteSocketAddr), sizeof(remoteSocketAddr));
+        ret = connect(socketFd, (const struct sockaddr*)(&remoteSocketAddr), sizeof(remoteSocketAddr));
         if (0 == ret) {
             break;
+        } else {
+            if ((EINPROGRESS == errno) || (EAGAIN == errno)) {
+                sleep_for(CONNECT_RETRY_BREAK_US);
+            } else {
+                break;
+            }
         }
-    } while (
-        RX_TIMEOUT_S > std::chrono::duration_cast<std::chrono::seconds>(
-                           get_monotonic_clock() - t0)
-                           .count());
+    } while (deadline > monotonic_now());
 
     if (0 != ret) {
-        perror("Failed to connect to server!\n");
         ::close(socketFd);
+        LOGE("Failed to connect to %s/%u: %d!!!\n", serverAddr.c_str(), remotePort, errno);
         return tcpClient;
     }
 
-    LOGI("[%s][%d] Connected to %s/%u\n", __func__, __LINE__, serverAddr.c_str(), remotePort);
+    tcpClient.reset(new IP_Endpoint(socketFd, remoteSocketAddr));
 
-    return std::unique_ptr<TcpClient>(new TcpClient(socketFd, serverAddr, remotePort));
-}
+    LOGI("Connected to %s/%u.\n", serverAddr.c_str(), remotePort);
 
-void TcpClient::runRx() {
-    while (!mExitFlag) {
-        if (!proceedRx()) {
-            LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
-            break;
-        }
-    }
-}
-
-void TcpClient::runTx() {
-    while (!mExitFlag) {
-        if (!proceedTx()) {
-            LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
-            break;
-        }
-    }
-}
-
-ssize_t TcpClient::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
-    ssize_t ret = ::recv(mSocketFd, pBuffer.get(), limit, 0);
-    if (0 > ret) {
-        if (EWOULDBLOCK == errno) {
-            ret = 0;
-        } else {
-            perror("Failed to read from TCP Socket!");
-        }
-    } else if (0 == ret) {
-        ret = -2;  // Stream socket peer has performed an orderly shutdown!
-    } else {
-        LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
-    }
-
-    return ret;
-}
-
-ssize_t TcpClient::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) {
-    // Send data over TCP
-    ssize_t ret = 0LL;
-    for (int i = 0; i < TX_RETRY_COUNT; i++) {
-        ret = ::send(mSocketFd, pData.get(), size, 0);
-        if (0 > ret) {
-            if (EWOULDBLOCK == errno) {
-                // Ignore & retry
-            } else {
-                perror("Failed to write to TCP Socket!");
-                break;
-            }
-        } else if (0 == ret) {
-            // Should not happen!
-        } else {
-            LOGD("[%s][%d] Transmitted %zd bytes\n", __func__, __LINE__, ret);
-            break;
-        }
-    }
-
-    return ret;
+    return tcpClient;
 }
 
 }  // namespace comm

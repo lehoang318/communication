@@ -1,169 +1,109 @@
+#include "IP_Endpoint.hpp"
 #include "TcpServer.hpp"
+#include "common.hpp"
 
 namespace comm {
 
-std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
+constexpr struct sockaddr_in TcpServer::DUMMY_SOCKADDR;
+
+std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     std::unique_ptr<TcpServer> tcpServer;
 
     if (0 == localPort) {
-        LOGE("[%s][%d] Local Port must be a positive value!\n", __func__, __LINE__);
+        LOGE("Local Port must be a positive value!!!\n");
         return tcpServer;
     }
 
-    int ret;
-
-    //---------------------------------------
-    // Initialize Winsock
     WSADATA wsaData;
-    ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
+    int ret = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (NO_ERROR != ret) {
-        LOGE("WSAStartup() failed (error code: %d)!\n", ret);
+        LOGE("WSAStartup() failed: %d!!!\n", ret);
         return tcpServer;
     }
 
-    SOCKET localSocketFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (INVALID_SOCKET == localSocketFd) {
-        LOGE("socket() failed (error code: %d)!\n", WSAGetLastError());
+    SOCKET socketFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (INVALID_SOCKET == socketFd) {
+        WSACleanup();
+        LOGE("Could not create TCP socket: %d!!!\n", WSAGetLastError());
+        return tcpServer;
+    }
+
+    if (0 > IP_Endpoint::configureSocket(socketFd)) {
+        closesocket(socketFd);
         WSACleanup();
         return tcpServer;
     }
 
-    BOOL enable = TRUE;
-    ret = setsockopt(localSocketFd, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char*>(&enable), sizeof(enable));
+    struct sockaddr_in socketAddr;
+    socketAddr.sin_family = AF_INET;
+    socketAddr.sin_addr.s_addr = INADDR_ANY;
+    socketAddr.sin_port = htons(localPort);
+    ret = bind(socketFd, (const struct sockaddr *)(&socketAddr), sizeof(socketAddr));
     if (SOCKET_ERROR == ret) {
-        LOGE("Failed to enable SO_REUSEADDR (error code: %d)\n", WSAGetLastError());
-        closesocket(localSocketFd);
+        closesocket(socketFd);
         WSACleanup();
+        LOGE("Failed to assigns address to the socket: %d!!!\n", WSAGetLastError());
         return tcpServer;
     }
 
-    // winsock does not support timeout!
-    // Reference: https://docs.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-accept
-    unsigned long non_blocking = 1;
-    if (SOCKET_ERROR == ioctlsocket(localSocketFd, FIONBIO, &non_blocking)) {
-        LOGE("Failed to enable NON-BLOCKING mode (error code: %d)\n", WSAGetLastError());
-        closesocket(localSocketFd);
-        WSACleanup();
-        return tcpServer;
-    }
-
-    struct sockaddr_in localSocketAddr;
-    localSocketAddr.sin_family = AF_INET;
-    localSocketAddr.sin_addr.s_addr = INADDR_ANY;
-    localSocketAddr.sin_port = htons(localPort);
-    ret = bind(localSocketFd, reinterpret_cast<const struct sockaddr*>(&localSocketAddr), sizeof(localSocketAddr));
+    ret = listen(socketFd, BACKLOG);
     if (SOCKET_ERROR == ret) {
-        LOGE("Failed to assigns address to the socket (error code: %d)\n", WSAGetLastError());
-        closesocket(localSocketFd);
+        closesocket(socketFd);
         WSACleanup();
+        LOGE("Failed to mark the socket as a passive socket: %d!!!\n", WSAGetLastError());
         return tcpServer;
     }
 
-    ret = listen(localSocketFd, BACKLOG);
-    if (SOCKET_ERROR == ret) {
-        LOGE("Failed to mark the socket as a passive socket (error code: %d)\n", WSAGetLastError());
-        closesocket(localSocketFd);
-        WSACleanup();
-        return tcpServer;
-    }
+    tcpServer.reset(new TcpServer(socketFd));
 
-    LOGI("[%s][%d] TCP Server is listenning at port %u ...\n", __func__, __LINE__, localPort);
+    LOGI("TCP Server is listenning at port %u ...\n", localPort);
 
-    return std::unique_ptr<TcpServer>(new TcpServer(localSocketFd));
+    return tcpServer;
 }
 
-void TcpServer::runRx() {
+std::unique_ptr<P2P_Endpoint> TcpServer::waitForClient(int &errorCode, const long timeout_ms) {
+    std::unique_ptr<IP_Endpoint> clientEndpoint;
     struct sockaddr_in remoteSocketAddr;
-    socklen_t remoteAddressSize = static_cast<socklen_t>(sizeof(remoteSocketAddr));
+    int remoteAddressSize = (int)sizeof(remoteSocketAddr);
 
-    while (!mExitFlag) {
-        mRxPipeFd = accept(
+    const auto deadline = monotonic_now() + std::chrono::milliseconds(timeout_ms);
+    SOCKET socketFd;
+    errorCode = 0;
+    do {
+        socketFd = accept(
             mLocalSocketFd,
-            reinterpret_cast<struct sockaddr*>(&remoteSocketAddr),
+            (struct sockaddr *)(&remoteSocketAddr),
             &remoteAddressSize);
 
-        if (!checkRxPipe()) {
+        if (INVALID_SOCKET == socketFd) {
             if (WSAEWOULDBLOCK == WSAGetLastError()) {
-                // Timeout - do nothing
-                continue;
+                sleep_for(ACCEPT_RETRY_BREAK_MS * US_PER_MS);
             } else {
-                perror("Could not access connection queue!\n");
-                break;
+                errorCode = WSAGetLastError();
+                LOGE("Encountered errors when executing `accept()`: %d!!!\n", WSAGetLastError());
+                return clientEndpoint;
             }
-        }
-
-        unsigned long non_blocking = 1;
-        if (SOCKET_ERROR == ioctlsocket(mRxPipeFd, FIONBIO, &non_blocking)) {
-            LOGE("Failed to enable NON-BLOCKING mode (error code: %d)\n", WSAGetLastError());
-            closesocket(mRxPipeFd);
-            WSACleanup();
-            continue;
-        }
-
-        mTxPipeFd = mRxPipeFd;
-
-        while (!mExitFlag) {
-            if (!proceedRx()) {
-                LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
-                break;
-            }
-        }
-
-        mTxPipeFd = INVALID_SOCKET;
-        closesocket(mRxPipeFd);
-        mRxPipeFd = INVALID_SOCKET;
-    }
-}
-
-void TcpServer::runTx() {
-    while (!mExitFlag) {
-        if (!proceedTx(!checkTxPipe())) {
-            LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
-        }
-    }
-}
-
-ssize_t TcpServer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
-    ssize_t ret = ::recv(mRxPipeFd, reinterpret_cast<char*>(pBuffer.get()), limit, 0);
-    if (SOCKET_ERROR == ret) {
-        int error = WSAGetLastError();
-        if (WSAEWOULDBLOCK == error) {
-            ret = 0;
         } else {
-            LOGE("Failed to read from TCP Socket (error code: %d)\n", error);
-        }
-    } else if (0 == ret) {
-        ret = -2;  // Stream socket peer has performed an orderly shutdown!
-    } else {
-        LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
-    }
-
-    return ret;
-}
-
-ssize_t TcpServer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) {
-    // Send data over TCP
-    ssize_t ret = 0LL;
-    for (int i = 0; i < TX_RETRY_COUNT; i++) {
-        ret = ::send(mTxPipeFd, reinterpret_cast<const char*>(pData.get()), size, 0);
-        if (SOCKET_ERROR == ret) {
-            int error = WSAGetLastError();
-            if (WSAEWOULDBLOCK == error) {
-                // Ignore & retry
-            } else {
-                mTxPipeFd = -1;
-                LOGE("Failed to write to TCP Socket (error code: %d)\n", error);
-                break;
-            }
-        } else if (0 == ret) {
-            // Should not happen!
-        } else {
-            LOGD("[%s][%d] Transmitted %zd bytes\n", __func__, __LINE__, ret);
             break;
         }
+    } while (deadline > monotonic_now());
+
+    if (INVALID_SOCKET == socketFd) {
+        LOGI("No pending connection.");
+        return clientEndpoint;
     }
 
-    return ret;
+    unsigned long non_blocking = 1;
+    if (SOCKET_ERROR == ioctlsocket(socketFd, FIONBIO, &non_blocking)) {
+        errorCode = WSAGetLastError();
+        closesocket(socketFd);
+        LOGE("Failed to enable NON-BLOCKING mode: %d!!!\n", WSAGetLastError());
+        return clientEndpoint;
+    }
+
+    clientEndpoint.reset(new IP_Endpoint(socketFd, DUMMY_SOCKADDR));
+
+    return clientEndpoint;
 }
 
 }  // namespace comm

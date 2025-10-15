@@ -2,57 +2,76 @@
 
 namespace comm {
 
-bool P2P_Endpoint::proceedRx() {
-    ssize_t byteCount = lread(mpRxBuffer, MAX_FRAME_SIZE);
+void P2P_Endpoint::runRx() {
+    mRxAliveFlag = true;
+    static std::unique_ptr<uint8_t[]> mpRxBuffer(new uint8_t[MAX_FRAME_SIZE]);
 
-    if (0 > byteCount) {
-        LOGE("[%s][%d] Could not read from lower layer!\n", __func__, __LINE__);
-        return false;
-    } else if (0 < byteCount) {
-        mDecoder.feed(mpRxBuffer, byteCount);
-    } else {
-        // Do nothing
+    while (!mExitFlag) {
+        if (!checkRxPipe()) {
+            LOGE("Rx Pipe was broken!!!\n");
+            break;
+        }
+
+        ssize_t byteCount = lread(mpRxBuffer, MAX_FRAME_SIZE);
+        if (0 > byteCount) {
+            LOGE("Could not read from lower layer!!!\n");
+            break;
+        } else if (0 < byteCount) {
+            mDecoder.feed(mpRxBuffer, byteCount);
+        } else {
+            // Do nothing
+        }
     }
 
-    return true;
+    mRxAliveFlag = false;
 }
 
-bool P2P_Endpoint::proceedTx(bool discard) {
-    std::deque<std::unique_ptr<Packet>> pTxPackets;
-    if (!mTxQueue.dequeue(pTxPackets) || (0 >= pTxPackets.size())) {
-        // Tx queue is empty!
-        return true;
-    }
-
-    if (discard) {
-        return true;
-    }
-
-    LOGD("[%s][%d] %zu packets in Tx queue\n", __func__, __LINE__, pTxPackets.size());
+void P2P_Endpoint::runTx() {
+    mTxAliveFlag = true;
 
     std::unique_ptr<uint8_t[]> pEncodedData;
     size_t encodedSize;
-    ssize_t byteCount;
+    ssize_t byteCount = 0;
 
-    for (auto& pPacket : pTxPackets) {
-        encode(pPacket->getPayload(), pPacket->getPayloadSize(), mTransactionId++,
-               pEncodedData, encodedSize);
+    while (!mExitFlag) {
+        if (!checkTxPipe()) {
+            LOGE("Tx Pipe was broken!!!\n");
+            break;
+        }
 
-        if ((!pEncodedData) || (0 == encodedSize)) {
-            LOGE("[%s][%d] Could not encode data!\n", __func__, __LINE__);
+        std::deque<std::unique_ptr<Packet>> pTxPackets;
+        if (!mTxQueue.dequeue(pTxPackets) || (0 >= pTxPackets.size())) {
+            // Tx queue is empty!
             continue;
         }
 
-        byteCount = lwrite(pEncodedData, encodedSize);
+        LOGD("%zu packets in Tx queue.\n", pTxPackets.size());
+
+        for (auto& pPacket : pTxPackets) {
+            encode(
+                pPacket->getPayload(), pPacket->getPayloadSize(), mTransactionId++,
+                pEncodedData, encodedSize);
+
+            if ((!pEncodedData) || (0 == encodedSize)) {
+                LOGE("Could not encode data!!!\n");
+                continue;
+            }
+
+            byteCount = lwrite(pEncodedData, encodedSize);
+            if (0 > byteCount) {
+                LOGE("Could not write to lower layer!!!\n");
+                break;
+            } else {
+                LOGD("Wrote %zd bytes.\n", byteCount);  // [TODO] byteCount < encodedSize
+            }
+        }
+
         if (0 > byteCount) {
-            LOGE("[%s][%d] Could not write to lower layer!\n", __func__, __LINE__);
-            return false;
-        } else {
-            LOGD("[%s][%d] Wrote %zd bytes\n", __func__, __LINE__, byteCount);
+            break;
         }
     }
 
-    return true;
+    mTxAliveFlag = false;
 }
 
 }  // namespace comm

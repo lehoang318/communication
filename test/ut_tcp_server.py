@@ -19,6 +19,16 @@ if __name__ == "__main__":
     else:
         print('-> Failed!')
 
+    print('Waiting for connection requests ...');
+    ret, errorCode = comm_wrapper.comm_tcp_server_wait_for_client(5000)
+    if ret:
+        print('-> Successfully!')
+    else:
+        if 0 == errorCode:
+            print('-> Failed (timeout)!')
+        else:
+            print('-> Failed ({})!'.format(errorCode))
+
     if (ut_tcpip_ep.execute()):
         print('-> Passed!')
     else:

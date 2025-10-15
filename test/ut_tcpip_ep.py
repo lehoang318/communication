@@ -33,17 +33,7 @@ def execute():
         print('Endpoint is not ready!')
         return False
 
-    print('Endpoint is ready, waiting for peer ...')
-
-    t0 = time.monotonic()
-    while ((TIMEOUT_S > (time.monotonic() - t0)) and (not comm_wrapper.comm_peer_connected())):
-        pass
-
-    if (not comm_wrapper.comm_peer_connected()):
-        print('Connection timeout!')
-        return False
-
-    print('Connected to peer, press enter to sent data to peer ...')
+    print('Endpoint is ready, press enter to sent data to peer ...')
     input()
 
     for i, v in enumerate(test_vectors.vectors):

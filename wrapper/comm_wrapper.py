@@ -70,6 +70,22 @@ def comm_deinit():
     global wrapper
     wrapper.comm_deinit()
 
+# bool comm_tcp_server_wait_for_client(int& error_code, const long timeout_ms);
+def comm_tcp_server_wait_for_client(timeout_ms):
+    if (not wrapper):
+        print('Shared library must be loaded in advance!')
+        return False
+    
+    if (not timeout_ms) or (type(timeout_ms) is not int) or (0 >= timeout_ms):
+        print('1st argument, Timeout (ms), must be a positive integer!')
+        return False
+
+    error_code = 0;
+    wrapper.comm_tcp_server_wait_for_client.restype = ctypes.c_bool
+    cerror_code = ctypes.c_int(error_code)
+    ctimeout_ms = ctypes.c_long(timeout_ms)
+    return (wrapper.comm_tcp_server_wait_for_client(ctypes.byref(cerror_code), ctimeout_ms), error_code)
+
 # bool comm_endpoint_ready();
 def comm_endpoint_ready():
     global wrapper

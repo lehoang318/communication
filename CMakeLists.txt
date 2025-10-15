@@ -33,10 +33,12 @@ add_compile_options(-Wall)
 add_library(
     comm STATIC
     src/P2P_Endpoint.cpp
+    src/common.cpp
 )
 
 if (WIN32)
     target_sources(comm PRIVATE
+        src/IP_Endpoint_win32.cpp
         src/TcpClient_win32.cpp
         src/TcpServer_win32.cpp
         src/UdpPeer_win32.cpp
@@ -44,6 +46,7 @@ if (WIN32)
     target_link_libraries(comm ws2_32)
 else (WIN32)
     target_sources(comm PRIVATE
+        src/IP_Endpoint.cpp
         src/TcpClient.cpp
         src/TcpServer.cpp
         src/UdpPeer.cpp

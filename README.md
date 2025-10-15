@@ -32,70 +32,49 @@ A lightweight library for Packet-based P2P Communication
 * `wrapper` : wrapper for libcomm
 
 ## Usage
-* `UdpPeer`
-```
-// Construct an UdpPeer
-std::unique_ptr<comm::P2P_Endpoint> pEndpoint =
-    comm::UdpPeer::create(<Local Port>, <Peer/Remote IP Address>, <Peer/Remote Port>);
-...
+* Endpoint initialization
+  * `UdpPeer`
+  ```
+  std::unique_ptr<comm::P2P_Endpoint> pEndpoint =
+      comm::IP_Endpoint::createUdpPeer(<Local Port>, <Peer/Remote IP Address>, <Peer/Remote Port>);
+  ...
+  ```
 
+  * TCP Client (created TCP Client shall try to connect to the designated server)
+  ```
+  std::unique_ptr<comm::P2P_Endpoint> pEndpoint =
+      comm::IP_Endpoint::createTcpClient(<Server IP Address>, <Server Port>);
+  ...
+  ```
+
+  * TCP Server
+  ```
+  // Construct a TCP Server
+  std::unique_ptr<comm::TcpServer> pTcpServer = comm::TcpServer::create(<Local Port>);
+  ...
+
+  // Waiting for client
+  int errorCode = 0;
+  std::unique_ptr<comm::P2P_Endpoint> pEndpoint = pTcpServer->waitForClient(errorCode, <timeout_ms>);
+  if (0 != errorCode) {
+      // Error handling
+  } else if (!pEndpoint) {
+      // Timeout handling
+  } else {
+      // Connected
+  }
+  ...
+  ```
+
+* Send/Receive data via endpoints
+```
 // Send a packet to Peer
-udpPeer.send(comm::Packet::create(<buffer address>, <buffer size>));
+pEndpoint->send(comm::Packet::create(<buffer address>, <buffer size>));
 ...
 
 // Check Rx queue
 std::deque<std::unique_ptr<comm::Packet>> pPackets;
-if (udpPeer.recvAll(pPackets)) {
-    for (auto& pPacket : pPackets) {
-        // do something
-    }
-}
-...
-```
-
-* TCP Server
-```
-// Construct a TCP Server
-std::unique_ptr<comm::P2P_Endpoint> pTcpServer = comm::TcpServer::create(<Local Port>);
-...
-
-// Waiting for client
-while (!pTcpServer->isPeerConnected()) {}
-...
-
-// Send a packet to TCP Client
-pTcpServer->send(comm::Packet::create(<buffer address>, <buffer size>));
-...
-
-// Check Rx queue
-std::deque<std::unique_ptr<comm::Packet>> pPackets;
-if (pTcpServer->recvAll(pPackets)) {
-    for (auto& pPacket : pPackets) {
-        // do something
-    }
-}
-...
-```
-
-* TCP Client
-```
-// Construct a TCP Client
-std::unique_ptr<comm::P2P_Endpoint> pTcpClient =
-    comm::TcpClient::create(<Server IP Address>, <Server Port>);
-
-if (!pTcpClient) {
-    LOGE("Could not create TCP Client which connects to %s/%u!\n", <Server IP Address>, <Server Port>);
-    return 1;
-}
-...
-
-// Send a packet to TCP Server
-pTcpClient->send(comm::Packet::create(<buffer address>, <buffer size>));
-...
-
-// Check Rx queue
-std::deque<std::unique_ptr<comm::Packet>> pPackets;
-if (pTcpClient->recvAll(pPackets)) {
+if (pEndpoint->recvAll(pPackets)) {
     for (auto& pPacket : pPackets) {
         // do something
     }

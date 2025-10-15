@@ -25,7 +25,7 @@ typedef int SOCKET;
 const char MSG[] = "Thank you!";
 uint8_t rx_buffer[128];
 
-inline std::chrono::time_point<std::chrono::steady_clock> get_monotonic_clock() {
+inline std::chrono::time_point<std::chrono::steady_clock> monotonic_now() {
     return std::chrono::steady_clock::now();
 }
 
@@ -64,17 +64,17 @@ int main(int argc, char ** argv) {
     remoteSocketAddr.sin_addr.s_addr = inet_addr(SERVER_ADDR);
     remoteSocketAddr.sin_port        = htons(SERVER_PORT);
 
-    auto t0 = get_monotonic_clock();
+    auto t0 = monotonic_now();
 
     do {
-        ret = connect(socketFd, reinterpret_cast<const struct sockaddr *>(&remoteSocketAddr), sizeof(remoteSocketAddr));
+        ret = connect(socketFd, (const struct sockaddr *)(&remoteSocketAddr), sizeof(remoteSocketAddr));
         if (0 == ret) {
             break;
         }
 
     } while (
         RX_TIMEOUT_S > std::chrono::duration_cast<std::chrono::seconds>(
-                            get_monotonic_clock() - t0
+                            monotonic_now() - t0
                         ).count()
     );
 
@@ -84,7 +84,7 @@ int main(int argc, char ** argv) {
         return -1;
     }
 
-    LOGI("[%s][%d] Connected to %s/%u, waiting for messages from server ...\n", __func__, __LINE__, SERVER_ADDR, SERVER_PORT);
+    LOGI("Connected to %s/%u, waiting for messages from server ...\n", SERVER_ADDR, SERVER_PORT);
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
     while (true) {
@@ -98,14 +98,13 @@ int main(int argc, char ** argv) {
                 return -1;
             }
         } else if (0 == ret) {
-            LOGE("[%s][%d] Stream socket peer has performed an orderly shutdown!\n", __func__, __LINE__);
+            LOGI("Stream socket peer has performed an orderly shutdown!\n");
             ::close(socketFd);
             return -1;
         } else {
-            LOGI("[%s][%d] Received %d bytes: '%s' after waiting for %lld (ms)\n",
-                __func__, __LINE__,
+            LOGI("Received %d bytes: '%s' after waiting for %lld (ms)\n",
                 ret, rx_buffer,
-                static_cast<long long int>(std::chrono::duration_cast<std::chrono::milliseconds>(get_monotonic_clock() - t0).count())
+                static_cast<long long int>(std::chrono::duration_cast<std::chrono::milliseconds>(monotonic_now() - t0).count())
             );
             break;
         }
@@ -122,17 +121,17 @@ int main(int argc, char ** argv) {
                 return -1;
             }
         } else if (0 == ret) {
-            LOGE("[%s][%d] Should not happen!\n", __func__, __LINE__);
+            LOGI("Should not happen!\n");
             ::close(socketFd);
             return -1;
         } else {
-            LOGI("[%s][%d] Transmitted %d bytes\n", __func__, __LINE__, ret);
+            LOGI("Transmitted %d bytes\n", ret);
             break;
         }
     }
 
     memset(rx_buffer, 0, sizeof(rx_buffer));
-    t0 = get_monotonic_clock();
+    t0 = monotonic_now();
     while (true) {
         ret = ::recv(socketFd, rx_buffer, sizeof(rx_buffer), 0);
         if (0 > ret) {
@@ -144,20 +143,19 @@ int main(int argc, char ** argv) {
                 return -1;
             }
         } else if (0 == ret) {
-            LOGE("[%s][%d] Stream socket peer has performed an orderly shutdown!\n", __func__, __LINE__);
+            LOGI("Stream socket peer has performed an orderly shutdown!\n");
             ::close(socketFd);
             return -1;
         } else {
-            LOGI("[%s][%d] Received %d bytes: '%s' after waiting for %lld (ms)\n",
-                __func__, __LINE__,
+            LOGI("Received %d bytes: '%s' after waiting for %lld (ms)\n",
                 ret, rx_buffer,
-                static_cast<long long int>(std::chrono::duration_cast<std::chrono::milliseconds>(get_monotonic_clock() - t0).count())
+                static_cast<long long int>(std::chrono::duration_cast<std::chrono::milliseconds>(monotonic_now() - t0).count())
             );
             break;
         }
     }
 
-    LOGE("[%s][%d] Terminating ...\n", __func__, __LINE__);
+    LOGI("Terminating ...\n");
 
     ::close(socketFd);
     return 0;

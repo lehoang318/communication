@@ -1,41 +1,29 @@
-#include "UdpPeer.hpp"
+#include "IP_Endpoint.hpp"
+#include "common.hpp"
+
+#include <arpa/inet.h>
+#include <cstdint>
+#include <memory>
+#include <netinet/in.h>
+#include <string>
 
 namespace comm {
 
-std::unique_ptr<UdpPeer> UdpPeer::create(
-    const uint16_t& localPort, const std::string& peerAddress, const uint16_t& peerPort) {
-    std::unique_ptr<UdpPeer> udpPeer;
+std::unique_ptr<IP_Endpoint> IP_Endpoint::createUdpPeer(const uint16_t& localPort, const std::string& peerAddress, const uint16_t& peerPort) {
+    std::unique_ptr<IP_Endpoint> udpPeer;
 
-    if (0 == localPort) {
-        LOGE("[%s][%d] Peer 's Port must be a positive value!\n", __func__, __LINE__);
+    if ((0 == localPort) && (0 == peerPort)) {
+        LOGE("UDP Ports must be positive!!!\n");
         return udpPeer;
     }
-
-    int ret;
 
     SOCKET socketFd = socket(AF_INET, SOCK_DGRAM, 0);
     if (0 > socketFd) {
-        perror("Could not create UDP socket!\n");
+        LOGE("Could not create UDP socket: %d!!!\n", errno);
         return udpPeer;
     }
 
-    int enable = 1;
-    ret = setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-    if (0 > ret) {
-        perror("Failed to enable SO_REUSEADDR!\n");
-        ::close(socketFd);
-        return udpPeer;
-    }
-
-    int flags = fcntl(socketFd, F_GETFL, 0);
-    if (0 > flags) {
-        perror("Failed to get socket flags!\n");
-        ::close(socketFd);
-        return udpPeer;
-    }
-
-    if (0 > fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK))) {
-        perror("Failed to enable NON-BLOCKING mode!\n");
+    if (0 > IP_Endpoint::configureSocket(socketFd)) {
         ::close(socketFd);
         return udpPeer;
     }
@@ -44,101 +32,35 @@ std::unique_ptr<UdpPeer> UdpPeer::create(
     localSocketAddr.sin_family = AF_INET;
     localSocketAddr.sin_addr.s_addr = INADDR_ANY;
     localSocketAddr.sin_port = htons(localPort);
-    ret = bind(socketFd, reinterpret_cast<const struct sockaddr*>(&localSocketAddr), sizeof(localSocketAddr));
+    int ret = bind(socketFd, (const struct sockaddr*)(&localSocketAddr), sizeof(localSocketAddr));
     if (0 > ret) {
-        perror("Failed to assigns address to the socket!\n");
         ::close(socketFd);
+        LOGE("Failed to assigns address to the socket: %d!!!\n", errno);
         return udpPeer;
     }
 
-    LOGI("[%s][%d] Bound at port %u\n", __func__, __LINE__, localPort);
-    return std::unique_ptr<UdpPeer>(new UdpPeer(socketFd, localPort, peerAddress, peerPort));
-}
-
-bool UdpPeer::setDestination(const std::string& address, const uint16_t& port) {
-    if (address.empty() || (0 == port)) {
-        LOGE("[%s][%d] Invalid peer information (`%s`/%u)!\n", __func__, __LINE__, address.c_str(), port);
-        return false;
+    if (peerAddress.empty() || (0 == peerPort)) {
+        ::close(socketFd);
+        LOGE("Invalid peer information: `%s`/%u!\n", peerAddress.c_str(), peerPort);
+        return udpPeer;
     }
 
-    std::lock_guard<std::mutex> lock(mTxMutex);
-    mPeerSockAddr.sin_family = AF_INET;
-    mPeerSockAddr.sin_port = htons(port);
-    mPeerSockAddr.sin_addr.s_addr = inet_addr(address.c_str());
-
-    return true;
-}
-
-void UdpPeer::runRx() {
-    while (!mExitFlag) {
-        if (!proceedRx()) {
-            LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
-            break;
-        }
-    }
-}
-
-void UdpPeer::runTx() {
-    while (!mExitFlag) {
-        if (!proceedTx(!checkTxPipe())) {
-            LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
-            break;
-        }
-    }
-}
-
-ssize_t UdpPeer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
-    socklen_t remoteAddressSize;
     struct sockaddr_in remoteSocketAddr;
-    remoteAddressSize = (socklen_t)sizeof(remoteSocketAddr);
-
-    ssize_t ret = recvfrom(
-        mSocketFd, pBuffer.get(), limit, 0,
-        reinterpret_cast<struct sockaddr*>(&remoteSocketAddr), &remoteAddressSize);
-
-    if (0 > ret) {
-        if (EWOULDBLOCK == errno) {
-            ret = 0;
-        } else {
-            perror("Failed to read from UDP Socket!");
-        }
-    } else if (0 == ret) {
-        // zero-length datagrams!
-        LOGI("[%s][%d] Zero-length datagram!\n", __func__, __LINE__);
-    } else {
-        LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
+    remoteSocketAddr.sin_family = AF_INET;
+    in_addr_t ipv4_addr = inet_addr(peerAddress.c_str());
+    if ((INADDR_NONE == ipv4_addr) || (INADDR_ANY == ipv4_addr)) {
+        ::close(socketFd);
+        LOGE("Invalid peer address: `%s`!!!\n", peerAddress.c_str());
+        return udpPeer;
     }
+    remoteSocketAddr.sin_addr.s_addr = ipv4_addr;
+    remoteSocketAddr.sin_port = htons(peerPort);
 
-    return ret;
-}
+    udpPeer.reset(new IP_Endpoint(socketFd, remoteSocketAddr));
 
-ssize_t UdpPeer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) {
-    // Send data over UDP
-    ssize_t ret = 0LL;
-    for (int i = 0; i < TX_RETRY_COUNT; i++) {
-        {
-            std::lock_guard<std::mutex> lock(mTxMutex);
-            ret = sendto(
-                mSocketFd, pData.get(), size, 0,
-                reinterpret_cast<struct sockaddr*>(&mPeerSockAddr), sizeof(mPeerSockAddr));
+    LOGI("Created new UdpPeer (local port: %u) <=> `%s`/%u.\n", localPort, peerAddress.c_str(), peerPort);
 
-            if (0 > ret) {
-                if (EWOULDBLOCK == errno) {
-                    // Ignore & retry
-                } else {
-                    perror("Failed to write to UDP Socket!");
-                    break;
-                }
-            } else if (0 == ret) {
-                // Should not happen!
-            } else {
-                LOGD("[%s][%d] Transmitted %zd bytes\n", __func__, __LINE__, ret);
-                break;
-            }
-        }
-    }
-
-    return ret;
+    return udpPeer;
 }
 
 }  // namespace comm

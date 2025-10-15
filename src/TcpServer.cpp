@@ -1,159 +1,109 @@
 #include "TcpServer.hpp"
 
+#include "IP_Endpoint.hpp"
+#include "common.hpp"
+
+#include <fcntl.h>
+
 namespace comm {
 
-std::unique_ptr<TcpServer> TcpServer::create(uint16_t localPort) {
+constexpr struct sockaddr_in TcpServer::DUMMY_SOCKADDR;
+
+std::unique_ptr<TcpServer> TcpServer::create(const uint16_t localPort) {
     std::unique_ptr<TcpServer> tcpServer;
 
     if (0 == localPort) {
-        LOGE("[%s][%d] Local Port must be a positive value!\n", __func__, __LINE__);
+        LOGE("Local Port must be a positive value!!!\n");
         return tcpServer;
     }
 
-    int ret;
-
-    SOCKET localSocketFd = socket(AF_INET, SOCK_STREAM, 0);
-    if (0 > localSocketFd) {
-        perror("Could not create TCP socket!\n");
+    SOCKET socketFd = socket(AF_INET, SOCK_STREAM, 0);
+    if (0 > socketFd) {
+        LOGE("Could not create TCP socket: %d!!!\n", errno);
         return tcpServer;
     }
 
-    int enable = 1;
-    ret = setsockopt(localSocketFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+    if (0 > IP_Endpoint::configureSocket(socketFd)) {
+        ::close(socketFd);
+        return tcpServer;
+    }
+
+    struct sockaddr_in socketAddr;
+    socketAddr.sin_family = AF_INET;
+    socketAddr.sin_addr.s_addr = INADDR_ANY;
+    socketAddr.sin_port = htons(localPort);
+    int ret = bind(socketFd, (const struct sockaddr *)(&socketAddr), sizeof(socketAddr));
     if (0 > ret) {
-        perror("Failed to enable SO_REUSEADDR!\n");
-        ::close(localSocketFd);
+        ::close(socketFd);
+        LOGE("Failed to assigns address to the socket: %d!!!\n", errno);
         return tcpServer;
     }
 
-    struct timeval timeout;
-    timeout.tv_sec = RX_TIMEOUT_S;
-    timeout.tv_usec = 0;
-    ret = setsockopt(localSocketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-    if (0 > ret) {
-        perror("Failed to configure SO_RCVTIMEO!\n");
-        ::close(localSocketFd);
-        return tcpServer;
-    }
-
-    struct sockaddr_in localSocketAddr;
-    localSocketAddr.sin_family = AF_INET;
-    localSocketAddr.sin_addr.s_addr = INADDR_ANY;
-    localSocketAddr.sin_port = htons(localPort);
-    ret = bind(localSocketFd, reinterpret_cast<const struct sockaddr*>(&localSocketAddr), sizeof(localSocketAddr));
-    if (0 > ret) {
-        perror("Failed to assigns address to the socket!\n");
-        ::close(localSocketFd);
-        return tcpServer;
-    }
-
-    ret = listen(localSocketFd, BACKLOG);
+    ret = listen(socketFd, BACKLOG);
     if (0 != ret) {
-        perror("Failed to mark the socket as a passive socket!\n");
-        ::close(localSocketFd);
+        ::close(socketFd);
+        LOGE("Failed to mark the socket as a passive socket: %d!!!\n", errno);
         return tcpServer;
     }
 
-    LOGI("[%s][%d] TCP Server is listenning at port %u ...\n", __func__, __LINE__, localPort);
+    tcpServer.reset(new TcpServer(socketFd));
 
-    return std::unique_ptr<TcpServer>(new TcpServer(localSocketFd));
+    LOGI("TCP Server is listenning at port %u ...\n", localPort);
+
+    return tcpServer;
 }
 
-void TcpServer::runRx() {
+std::unique_ptr<P2P_Endpoint> TcpServer::waitForClient(int &errorCode, const long timeout_ms) {
+    std::unique_ptr<IP_Endpoint> clientEndpoint;
     struct sockaddr_in remoteSocketAddr;
-    socklen_t remoteAddressSize = static_cast<socklen_t>(sizeof(remoteSocketAddr));
+    socklen_t remoteAddressSize = (socklen_t)sizeof(remoteSocketAddr);
 
-    while (!mExitFlag) {
-        mRxPipeFd = accept(
+    const auto deadline = monotonic_now() + std::chrono::milliseconds(timeout_ms);
+    int socketFd;
+    errorCode = 0;
+    do {
+        socketFd = accept(
             mLocalSocketFd,
-            reinterpret_cast<struct sockaddr*>(&remoteSocketAddr),
+            (struct sockaddr *)(&remoteSocketAddr),
             &remoteAddressSize);
 
-        if (!checkRxPipe()) {
-            if (EAGAIN == errno) {
-                // Timeout - do nothing
-                continue;
-            } else {
-                perror("Could not access connection queue!\n");
-                break;
-            }
-        }
-
-        int flags = fcntl(mRxPipeFd, F_GETFL, 0);
-        if (0 > flags) {
-            perror("Failed to get socket flags!\n");
-            ::close(mRxPipeFd);
-            continue;
-        }
-
-        if (0 > fcntl(mRxPipeFd, F_SETFL, (flags | O_NONBLOCK))) {
-            perror("Failed to enable NON-BLOCKING mode!\n");
-            ::close(mRxPipeFd);
-            continue;
-        }
-
-        mTxPipeFd = mRxPipeFd;
-
-        while (!mExitFlag) {
-            if (!proceedRx()) {
-                LOGE("[%s][%d] Rx Pipe was broken!\n", __func__, __LINE__);
-                break;
-            }
-        }
-
-        mTxPipeFd = INVALID_SOCKET;
-        ::close(mRxPipeFd);
-        mRxPipeFd = INVALID_SOCKET;
-    }
-}
-
-void TcpServer::runTx() {
-    while (!mExitFlag) {
-        if (!proceedTx(!checkTxPipe())) {
-            LOGE("[%s][%d] Tx Pipe was broken!\n", __func__, __LINE__);
-        }
-    }
-}
-
-ssize_t TcpServer::lread(const std::unique_ptr<uint8_t[]>& pBuffer, const size_t& limit) {
-    ssize_t ret = ::recv(mRxPipeFd, pBuffer.get(), limit, 0);
-    if (0 > ret) {
-        if (EWOULDBLOCK == errno) {
-            ret = 0;
-        } else {
-            perror("Failed to read from TCP Socket!");
-        }
-    } else if (0 == ret) {
-        ret = -2;  // Stream socket peer has performed an orderly shutdown!
-    } else {
-        LOGD("[%s][%d] Received %zd bytes\n", __func__, __LINE__, ret);
-    }
-
-    return ret;
-}
-
-ssize_t TcpServer::lwrite(const std::unique_ptr<uint8_t[]>& pData, const size_t& size) {
-    // Send data over TCP
-    ssize_t ret = 0LL;
-    for (int i = 0; i < TX_RETRY_COUNT; i++) {
-        ret = ::send(mTxPipeFd, pData.get(), size, 0);
-        if (0 > ret) {
-            if (EWOULDBLOCK == errno) {
-                // Ignore & retry
-            } else {
-                mTxPipeFd = -1;
-                perror("Failed to write to TCP Socket!");
-                break;
-            }
-        } else if (0 == ret) {
-            // Should not happen!
-        } else {
-            LOGD("[%s][%d] Transmitted %zd bytes\n", __func__, __LINE__, ret);
+        if (0 < socketFd) {
             break;
+        } else if (0 == socketFd) {
+            // Should not happen!!!
+            LOGW("`accept()` returned 0!!!\n");
+            return clientEndpoint;
+        } else if (EWOULDBLOCK == errno) {
+            sleep_for(ACCEPT_RETRY_BREAK_MS * US_PER_MS);
+        } else {
+            errorCode = errno;
+            LOGE("Encountered errors when executing `accept()`: %d!!!\n", errno);
+            return clientEndpoint;
         }
+    } while (deadline > monotonic_now());
+
+    if (0 >= socketFd) {
+        LOGI("No pending connection.");
+        return clientEndpoint;
     }
 
-    return ret;
+    int flags = fcntl(socketFd, F_GETFL, 0);
+    if (0 > flags) {
+        ::close(socketFd);
+        LOGE("Failed to get socket flags: %d!!!\n", errno);
+        return clientEndpoint;
+    }
+
+    if (0 > fcntl(socketFd, F_SETFL, (flags | O_NONBLOCK))) {
+        errorCode = errno;
+        ::close(socketFd);
+        LOGE("Failed to enable NON-BLOCKING mode: %d!!!\n", errno);
+        return clientEndpoint;
+    }
+
+    clientEndpoint.reset(new IP_Endpoint(socketFd, DUMMY_SOCKADDR));
+
+    return clientEndpoint;
 }
 
 }  // namespace comm

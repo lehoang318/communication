@@ -1,54 +1,47 @@
-#include "test_vectors.hpp"
-
-#include "Encoder.hpp"
 #include "Packet.hpp"
 #include "TcpServer.hpp"
-
 #include "common.hpp"
+#include "test_vectors.hpp"
 #include "util.hpp"
 
-#include <cstring>
 #include <cinttypes>
+#include <cstring>
 #include <deque>
 
 #define EP_NAME "TcpServer"
 
-int main(int argc, char ** argv) {
+int main(int argc, char** argv) {
     if (2 > argc) {
         LOGE("Usage: %s <Local Port>\n", argv[0]);
         return 1;
     }
 
-    std::unique_ptr<comm::P2P_Endpoint> pEndpoint = comm::TcpServer::create(
-        static_cast<uint16_t>(atoi(argv[1]))
-    );
+    std::unique_ptr<comm::TcpServer> pTcpServer = comm::TcpServer::create(static_cast<uint16_t>(atoi(argv[1])));
 
-    if (!pEndpoint) {
-        LOGE("Could not create %s which listens at port %s!\n", EP_NAME, argv[1]);
+    if (!pTcpServer) {
+        LOGE("Could not create TCP Server which listens at port %s!!!\n", argv[1]);
         return 1;
     }
 
-    LOGI("%s is ready, waiting for peer ...\n", EP_NAME);
-
-    auto t0 = get_monotonic_clock();
-    while (!pEndpoint->isPeerConnected()) {
-        if (
-            std::chrono::seconds(10) <
-            std::chrono::duration_cast<std::chrono::seconds>(get_monotonic_clock() - t0)
-        ) {
-            LOGE("Timeout!\n");
-            return 1;
-        }
+    LOGI("TCP Server is ready, waiting for connection requests ...\n");
+    int errorCode = 0;
+    std::unique_ptr<comm::P2P_Endpoint> pEndpoint = pTcpServer->waitForClient(errorCode, 5000);
+    if (0 != errorCode) {
+        LOGE("Encountered errors while waiting for connection requests: %d!!!\n", errorCode);
+        return 1;
+    } else if (!pEndpoint) {
+        LOGD("Timeout.\n");
+        return 1;
+    } else {
+        LOGI("Accepted one client, press enter to sent data ...\n");
     }
 
-    LOGI("Connected to peer, press enter to sent data to peer ...\n");
     getchar();
 
     for (size_t i = 0; i < vectors.size(); i++) {
         LOGI("[%" PRId64 " (us)] Sending packet %zu (%zu bytes) ...\n",
-            get_elapsed_realtime_us(),
-            i, vectors_sizes[i]
-        );
+             get_elapsed_realtime_us(),
+             i, vectors_sizes[i]);
 #ifdef USE_RAW_POINTER
         pEndpoint->send(comm::Packet::create(vectors[i], vectors_sizes[i]));
 #else   // USE_RAW_POINTER
@@ -69,7 +62,7 @@ int main(int argc, char ** argv) {
             LOGI("-> Failed!\n");
         }
     } else {
-        LOGE("Rx Queue is empty!\n");
+        LOGE("Rx Queue is empty!!!\n");
     }
 
     LOGI("Press enter to exit ...\n");
