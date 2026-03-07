@@ -16,9 +16,9 @@ CMakeCache.txt
 */CMakeCache.txt
 **/CMakeCache.txt
 
-*.cmake
-*/*.cmake
-**/*.cmake
+# *.cmake
+# */*.cmake
+# **/*.cmake
 
 Makefile
 */Makefile

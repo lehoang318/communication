@@ -5,6 +5,7 @@
 #include "util.hpp"
 
 #include <cinttypes>
+#include <cstdlib>
 #include <cstring>
 #include <deque>
 
@@ -16,7 +17,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    std::unique_ptr<comm::TcpServer> pTcpServer = comm::TcpServer::create(static_cast<uint16_t>(atoi(argv[1])));
+    std::unique_ptr<comm::TcpServer> pTcpServer = comm::TcpServer::create(static_cast<uint16_t>(std::atoi(argv[1])));
 
     if (!pTcpServer) {
         LOGE("Could not create TCP Server which listens at port %s!!!\n", argv[1]);

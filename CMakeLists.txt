@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(Communication)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)   # Generate `compile_commands.json`
 
 # add `-DDEFINE_DEBUG=ON` to enable debug log
 OPTION(DEFINE_DEBUG "Enable debug log" OFF) # Disabled by default

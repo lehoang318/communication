@@ -88,6 +88,7 @@ if (pEndpoint->recvAll(pPackets)) {
 rm -rf build-linux
 mkdir build-linux
 cd build-linux
+# cmake -DCMAKE_TOOLCHAIN_FILE=../toolchain-clang.cmake ..
 cmake ..
 make
 ```
@@ -97,6 +98,7 @@ make
 rm -rf build-mingw
 mkdir build-mingw
 cd build-mingw
+# cmake -G "MinGW Makefiles" -DCMAKE_TOOLCHAIN_FILE=../toolchain-clang.cmake ..
 cmake -G "MinGW Makefiles" ..
 cmake --build .
 ```
